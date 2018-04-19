@@ -8,37 +8,6 @@ import mockdata from "./d3Related/MockData.json";
 import mockdata1 from "./d3Related/MockData1.json";
 import mockdata2 from "./d3Related/MockData2.json";
 
-const data1 = [
-	{date: "2014-06-30T16:00:00.000Z", open: 4, close: 8},
-	{date: "2014-07-01T16:00:00.000Z", open: 8, close: 15},
-	{date: "2014-07-02T16:00:00.000Z", open: 15, close: 16},
-	{date: "2014-07-03T16:00:00.000Z", open: 16, close: 10}
-];
-const data2 = [
-	{date: "2014-06-30T16:00:00.000Z", open: 35, close: 3},
-	{date: "2014-07-01T16:00:00.000Z", open: 3, close: 65},
-	{date: "2014-07-02T16:00:00.000Z", open: 65, close: 42},
-	{date: "2014-07-03T16:00:00.000Z", open: 42, close: 14},
-	{date: "2014-07-04T16:00:00.000Z", open: 14, close: 82},
-	{date: "2014-07-05T16:00:00.000Z", open: 82, close: 38},
-	{date: "2014-07-06T16:00:00.000Z", open: 38, close: 88}
-];
-const data3 = [
-	{date: "2014-06-30T16:00:00.000Z", open: 14, close: 42},
-	{date: "2014-07-01T16:00:00.000Z", open: 42, close: 33},
-	{date: "2014-07-02T16:00:00.000Z", open: 33, close: 61},
-	{date: "2014-07-03T16:00:00.000Z", open: 61, close: 29},
-	{date: "2014-07-04T16:00:00.000Z", open: 29, close: 4},
-	{date: "2014-07-05T16:00:00.000Z", open: 4, close: 18}
-];
-const data4 = [
-	{date: "2014-06-30T16:00:00.000Z", open: 4, close: 52},
-	{date: "2014-07-01T16:00:00.000Z", open: 52, close: 12},
-	{date: "2014-07-02T16:00:00.000Z", open: 12, close: 38},
-	{date: "2014-07-03T16:00:00.000Z", open: 38, close: 22},
-	{date: "2014-07-04T16:00:00.000Z", open: 22, close: 30}
-];
-
 class App extends Component {
 	constructor(props) {
 		super(props);
@@ -51,8 +20,8 @@ class App extends Component {
 	}
 
 	handleClick = () => {
-		let {x, data} = this.state;
-		if (x != 2) x++;
+		let {x} = this.state;
+		if (x !== 2) x++;
 		else x = 0;
 		let newData;
 		let index = x;
@@ -63,13 +32,14 @@ class App extends Component {
 			case 1:
 				newData = mockdata1;
 				break;
-			case 2:
+			default:
 				newData = mockdata2;
 				break;
 		}
 		this.setState({
 			x: x,
-			data: newData
+			data: newData,
+			currentdata: null
 		});
 	};
 
@@ -80,7 +50,7 @@ class App extends Component {
 	};
 
 	render() {
-		const {x, data, currentdata} = this.state;
+		const {data, currentdata} = this.state;
 		let date;
 		let format = d3.timeFormat("%b %d");
 		date = currentdata ? format(new Date(Date.parse(currentdata.date))) : null;

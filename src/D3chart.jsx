@@ -10,42 +10,13 @@ let colorIncreaseFill = "rgba(94,137,50,1)",
 let margin = {top: 20, right: 30, bottom: 30, left: 40};
 let width = 960 - margin.left - margin.right,
 	height = 500 - margin.top - margin.bottom,
-	rectWidth = 11,
-	barH = 20;
+	rectWidth = 11;
 let xAxistipWidth = 40;
-let tooltipLineHeight = 10;
 let chart, chartdata, bars;
-
-let drawTable = () => {
-	var matrix = [
-		[11975, 5871, 8916, 2868],
-		[1951, 10048, 2060, 6171],
-		[8010, 16145, 8090, 8045],
-		[1013, 990, 940, 6907]
-	];
-
-	var tr = d3
-		.select(".test-table")
-		.append("table")
-		.selectAll("tr")
-		.data(matrix)
-		.enter()
-		.append("tr");
-	var td = tr
-		.selectAll("td")
-		.data(function(d) {
-			return d;
-		})
-		.enter()
-		.append("td")
-		.text(function(d) {
-			return d;
-		});
-};
 
 let drawMainChart = props => {
 	const {data, pickedDatum} = props;
-	let x, y, x0;
+	let x, y;
 	let xAxis, yAxis;
 
 	let maxDate = d3.max(data, d => {
@@ -145,19 +116,11 @@ let drawMainChart = props => {
 			.style("opacity", 0)
 			.style("z-index", -1);
 	}
+	//Scales
 	x = d3
 		.scaleTime()
 		.domain([start, end])
 		.range([0, width /*(rectWidth + 20) * (data.length + 1)*/]);
-	x0 = d3
-		.scaleBand()
-		.rangeRound([0, rectWidth * data.length])
-		.padding(0)
-		.domain(
-			data.map(d => {
-				return d.date;
-			})
-		);
 	y = d3
 		.scaleLinear()
 		.domain([
@@ -367,38 +330,6 @@ let drawMainChart = props => {
 			hideXAxisTip();
 		});
 
-};
-
-let updateMainChart = props => {
-	const data = props.data;
-	let rect, text, x;
-	x = d3
-		.scaleLinear()
-		.domain([0, 100])
-		.range([0, width]);
-	bars = chart.selectAll("g");
-	bars
-		.data(data)
-		.exit()
-		.remove();
-	let newBars = bars
-		.data(data)
-		.enter()
-		.append("g")
-		.attr("transform", (d, i) => {
-			return "translate(0," + i * barH + ")";
-		});
-	rect = bars.select("rect");
-	text = bars.select("text");
-	rect.transition(500).attr("width", x);
-	text
-		.transition(500)
-		.attr("x", d => {
-			return x(d) - 3;
-		})
-		.text(d => {
-			return d;
-		});
 };
 
 export default class D3chart extends React.Component {
