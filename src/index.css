@@ -1,0 +1,104 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+.d3chart-container {
+  position: fixed;
+  top: 220px;
+  left: 200px;
+}
+
+#chart {
+  height: 500px;
+  width: 960px;
+  background-color: #000;
+  cursor: crosshair;
+}
+
+#chart div {
+  background: white;
+  text-align: left;
+}
+
+#chart text {
+  fill: white;
+  font: 10px sans-serif;
+  text-anchor: end;
+}
+.bar-rect {
+  z-index: 2;
+}
+.bar-background {
+	fill: rgba(255,255,255,0.00);
+  stroke: none;
+  z-index: 1;
+}
+
+.single-bar {
+  z-index: 5;
+}
+.single-bar:hover .bar-background {
+	fill: rgba(30,30,30,1);
+}
+
+.bar-tooltip-hide {
+  fill: transparent !important;
+  text-anchor: start !important; 
+  font-size: 8px !important;
+}
+
+.bar-tooltip-show {
+  fill: white !important;
+  text-anchor: start !important; 
+  font-size: 8px !important;
+}
+
+.tooltip {
+  position: absolute;
+  background: rgba(15,15,15,0.6);
+  border: 1px solid rgba(40,40,40, 1);
+  padding: 5px;
+  text-align: left;
+  font-size: 8px;
+  color: white;
+}
+
+.x-axis-tip {
+  position: absolute;
+  background: rgba(50,50,50,0.95);
+  border: 1px solid rgba(60,60,60, 1);
+  padding: 2px;
+  text-align: center;
+  font-size: 10px;
+  color: white;
+  width: 40px;
+}
+
+.y-axis-tip {
+  position: absolute;
+  background: rgba(50,50,50,0.95);
+  border: 1px solid rgba(60,60,60, 1);
+  padding: 2px;
+  text-align: center;
+  font-size: 10px;
+  color: white;
+  width: 32px;
+  height: 14px;
+}
+
+.track-line {
+  position: absolute;
+  border-top: 1px dashed rgba(80,80,80,1);
+  height: 1px;
+  width: 889px;
+  pointer-events:none
+}
+
+.grid line {
+  stroke: rgba(55,55,55,1);
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+  z-index: 0;
+}
