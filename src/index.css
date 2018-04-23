@@ -122,6 +122,6 @@ body {
 
 .info-column {
   width: 55px;
-  text-align: right;
-  margin-right: 5px;
+  text-align: left;
+  margin-left: 5px;
 }

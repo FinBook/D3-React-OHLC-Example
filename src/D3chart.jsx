@@ -12,14 +12,15 @@ let colorIncreaseFill = "rgba(94,137,50,1)",
 let margin = {top: 40, right: 30, bottom: 30, left: 60};
 let width = 960 - margin.left - margin.right,
 	height = 500 - margin.top - margin.bottom,
-	rectWidth = 11;
+	rectWidth = 11,
+	backrectWidth;
 let xAxistipWidth = 40;
 let chart, chartdata, bars;
 
 let drawMainChart = props => {
 	const {data, pickedDatum} = props;
-	let x, y;
-	let xAxis, yAxis;
+	let x, y, new_x;
+	let xAxis, yAxis, xGrid, yGrid;
 
 	let maxDate = d3.max(data, d => {
 		return d.date;
@@ -97,7 +98,7 @@ let drawMainChart = props => {
 			.style("z-index", 8);
 		xAxistip
 			.html(xValue)
-			.style("left", (x(new Date(Date.parse(d.date))) + margin.left - xAxistipWidth / 2 - 2) + "px")
+			.style("left", (new_x(new Date(Date.parse(d.date))) + margin.left - xAxistipWidth / 2 - 2) + "px")
 			.style("top", ( height + margin.top + 2) + 'px');
 	}
 
@@ -152,11 +153,35 @@ let drawMainChart = props => {
 			) + 2
 		])
 		.range([height, 0]);
+
+	new_x = x;
 	xAxis = d3
 		.axisBottom()
 		.scale(x)
 		.ticks(10);
 	yAxis = d3.axisLeft().scale(y);
+	
+	xGrid = d3
+		.axisBottom()
+		.scale(x)
+		.ticks(5)
+		.tickSize(-height)
+		.tickFormat("")
+
+	yGrid = d3
+		.axisLeft()
+		.scale(y)
+		.ticks(5)
+		.tickSize(-width)
+		.tickFormat("")
+	//Zoom
+	let zoom = d3.zoom().on("zoom", zoomed);
+
+	
+
+
+	rectWidth = (x(new Date("2000-01-02")) - x(new Date("2000-01-01"))) * 0.8;
+	backrectWidth = (x(new Date("2000-01-02")) - x(new Date("2000-01-01"))) * 1;
 
 	d3.selectAll("g").remove();
 	d3.selectAll("rect").remove();
@@ -227,33 +252,25 @@ let drawMainChart = props => {
 
 
 	//Chart Grid
-	chart
+	let gridX = chart
 		.append("g")
 		.attr("class", "grid")
 		.attr("transform", "translate(0," + height + ")")
-		.call(
-			makeXGrid()
-				.tickSize(-height)
-				.tickFormat("")
-		);
-	chart
+		.call(xGrid);
+	let gridY = chart
 		.append("g")
 		.attr("class", "grid")
-		.call(
-			makeYGrid()
-				.tickSize(-width)
-				.tickFormat("")
-		);
+		.call(yGrid);
 	//Chart Axis
-	chart
+	let gX = chart
 		.append("g")
 		.attr("class", "x axis")
 		.attr("transform", "translate(0," + height + ")")
-		.call(xAxis)
-		.selectAll("text")
+		.call(xAxis);
+	gX.selectAll("text")
 		.style("text-anchor", "middle");
 
-	chart
+	let gY = chart
 		.append("g")
 		.attr("class", "y axis")
 		.call(yAxis);
@@ -276,10 +293,10 @@ let drawMainChart = props => {
 		.append("rect")
 		.attr("class", "bar-background")
 		.attr("x", d => {
-			return x(new Date(Date.parse(d.date))) - rectWidth / 2 - 1;
+			return x(new Date(Date.parse(d.date))) - backrectWidth / 2 ;
 		})
 		.attr("y", 0)
-		.attr("width", rectWidth + 3)
+		.attr("width", backrectWidth)
 		.attr("height", height)
 		.on("mousemove", d=> {
 			showColumndata(d);
@@ -295,13 +312,13 @@ let drawMainChart = props => {
 		.append("rect")
 		.attr("class", "bar-rect")
 		.attr("x", d => {
-			return x(new Date(Date.parse(d.date))) - rectWidth / 2 + 1.5;
+			return x(new Date(Date.parse(d.date))) - rectWidth / 2 ;
 			
 		})
 		.attr("y", d => {
 			return isUpday(d) ? y(d.close) : y(d.open);
 		})
-		.attr("width", rectWidth - 2)
+		.attr("width", rectWidth)
 		.attr("height", d => {
 			return isUpday(d) ? y(d.open) - y(d.close) : y(d.close) - y(d.open);
 		})
@@ -328,10 +345,11 @@ let drawMainChart = props => {
 	//High low lines
 	bars
 		.append("path")
+		.attr("class", "bar-line1")
 		.attr("d", d => {
 			return line([
-				{x: x(new Date(Date.parse(d.date))) + 0.5, y: y(d.high)},
-				{x: x(new Date(Date.parse(d.date))) + 0.5, y: isUpday(d) ? y(d.close) : y(d.open)}
+				{x: x(new Date(Date.parse(d.date))), y: y(d.high)},
+				{x: x(new Date(Date.parse(d.date))), y: isUpday(d) ? y(d.close) : y(d.open)}
 			]);
 		})
 		.style("stroke", d => {
@@ -350,10 +368,11 @@ let drawMainChart = props => {
 		});
 	bars
 		.append("path")
+		.attr("class", "bar-line2")
 		.attr("d", d => {
 			return line([
-				{x: x(new Date(Date.parse(d.date))) + 0.5, y: y(d.low)},
-				{x: x(new Date(Date.parse(d.date))) + 0.5, y: isUpday(d) ? y(d.open) : y(d.close)}
+				{x: x(new Date(Date.parse(d.date))), y: y(d.low)},
+				{x: x(new Date(Date.parse(d.date))), y: isUpday(d) ? y(d.open) : y(d.close)}
 			]);
 		})
 		.style("stroke", d => {
@@ -371,6 +390,44 @@ let drawMainChart = props => {
 			hideXAxisTip();
 		});
 
+	chart.call(zoom);
+
+	function zoomed() {
+		console.log('123');
+		gX.call(xAxis.scale(d3.event.transform.rescaleX(x)));
+		gridX.call(xGrid.scale(d3.event.transform.rescaleX(x)));
+		new_x = d3.event.transform.rescaleX(x);
+		rectWidth = (new_x(new Date("2000-01-02")) - new_x(new Date("2000-01-01"))) * 0.8;
+		backrectWidth = (new_x(new Date("2000-01-02")) - new_x(new Date("2000-01-01"))) * 1;
+		d3.selectAll(".bar-background")
+			.data(data)
+			.attr("x", d => {
+				return new_x(new Date(Date.parse(d.date))) - backrectWidth / 2 ;
+			})
+			.attr("width", backrectWidth)
+		d3.selectAll(".bar-rect")
+			.data(data)
+			.attr("x", (d) => {
+				return new_x(new Date(Date.parse(d.date))) - rectWidth / 2 ;
+			})
+			.attr("width", rectWidth);
+		d3.selectAll(".bar-line1")
+			.data(data)
+			.attr("d", d => {
+				return line([
+					{x: new_x(new Date(Date.parse(d.date))), y: y(d.high)},
+					{x: new_x(new Date(Date.parse(d.date))), y: isUpday(d) ? y(d.close) : y(d.open)}
+				]);
+			})
+		d3.selectAll(".bar-line2")
+			.data(data)
+			.attr("d", d => {
+				return line([
+					{x: new_x(new Date(Date.parse(d.date))), y: y(d.low)},
+					{x: new_x(new Date(Date.parse(d.date))), y: isUpday(d) ? y(d.open) : y(d.close)}
+				]);
+			})
+	}
 };
 
 export default class D3chart extends React.Component {
