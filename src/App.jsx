@@ -61,7 +61,7 @@ class App extends Component {
 						return <span key={i}>{x.date + ' ['+ x.open + ', ' + x.close + ', ' + x.high + ', ' + x.low + "] "}</span>;
 					})}
 				</p>*/}
-				<button onClick={this.handleClick}>Change Data</button>
+				<button className="change-button" onClick={this.handleClick}>Change Data</button>
 				<div className="d3chart-container">
 					<D3chart data={data} pickedDatum={this.pickedDatum} />
 				</div>

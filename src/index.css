@@ -103,3 +103,25 @@ body {
   shape-rendering: crispEdges;
   z-index: 0;
 }
+
+.info-bar {
+  position: absolute;
+  top: 0px;
+  left: 20px;
+  color: rgba(250,250,250,1);
+  display: flex;
+}
+
+.upday-column {
+  color: rgba(136,208,64,1);
+}
+
+.downday-column {
+  color: rgba(214,48,48,1);
+}
+
+.info-column {
+  width: 55px;
+  text-align: right;
+  margin-right: 5px;
+}

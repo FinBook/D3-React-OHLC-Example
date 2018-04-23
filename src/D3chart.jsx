@@ -1,13 +1,15 @@
 import React from "react";
 import * as d3 from "d3";
 
+let	Coinname = "Ethereum(ETH)";
+
 let chartLeftOffset = 0,
 	chartTopOffset = 60;
 let colorIncreaseFill = "rgba(94,137,50,1)",
 	colorDecreaseFill = "rgba(140,41,41,1)",
 	colorIncreaseStroke = "rgba(136,208,64,1)",
 	colorDecreaseStroke = "rgba(214,48,48,1)";
-let margin = {top: 20, right: 30, bottom: 30, left: 60};
+let margin = {top: 40, right: 30, bottom: 30, left: 60};
 let width = 960 - margin.left - margin.right,
 	height = 500 - margin.top - margin.bottom,
 	rectWidth = 11;
@@ -50,6 +52,20 @@ let drawMainChart = props => {
 		return d3.axisLeft(y).ticks(5);
 	}
 
+	let showColumndata = (d) => {
+		infoBar
+			.html(
+				Coinname + " O: <div class = '" + (isUpday(d)? "upday-column" : "downday-column") + " info-column'>" +
+				d.open.toFixed(2) +
+				"</div> H: <div class = '" + (isUpday(d)? "upday-column" : "downday-column") + " info-column'>" +
+				d.high.toFixed(2) +
+				"</div> L: <div class = '" + (isUpday(d)? "upday-column" : "downday-column") + " info-column'>" +
+				d.low.toFixed(2) +
+				"</div> C: <div class = '" + (isUpday(d)? "upday-column" : "downday-column") + " info-column'>" +
+				d.close.toFixed(2) + "</div>"
+			)
+	}
+
 
 	let showTooltip = (d) => {
 		tooltip
@@ -82,7 +98,7 @@ let drawMainChart = props => {
 		xAxistip
 			.html(xValue)
 			.style("left", (x(new Date(Date.parse(d.date))) + margin.left - xAxistipWidth / 2 - 2) + "px")
-			.style("top", ( height + margin.bottom - 8) + 'px');
+			.style("top", ( height + margin.top + 2) + 'px');
 	}
 
 	let showYAxisTip = () => {
@@ -150,6 +166,17 @@ let drawMainChart = props => {
 	d3.selectAll(".x-axis-tip").remove();
 	d3.selectAll(".y-axis-tip").remove();
 	d3.selectAll(".track-line").remove();
+	d3.selectAll(".info-bar").remove();
+	d3.selectAll(".info-column").remove();
+	//Info-bar div
+	let infoBar = d3
+		.select("#trade-chart")
+		.append("div")
+		.attr("class", "info-bar")
+		.html(
+			Coinname
+		)
+
 	//Tooltip div
 	let tooltip = d3
 		.select("#trade-chart")
@@ -254,6 +281,9 @@ let drawMainChart = props => {
 		.attr("y", 0)
 		.attr("width", rectWidth + 3)
 		.attr("height", height)
+		.on("mousemove", d=> {
+			showColumndata(d);
+		})
 		.on("mouseover", d => {
 			showXAxisTip(d);
 		})
@@ -281,6 +311,9 @@ let drawMainChart = props => {
 		.style("stroke", d => {
 			return isUpday(d) ? colorIncreaseStroke : colorDecreaseStroke;
 		})
+		.on("mousemove", d=> {
+			showColumndata(d);
+		})
 		.on("mouseover", d => {
 			showTooltip(d);
 			showXAxisTip(d);
@@ -304,6 +337,9 @@ let drawMainChart = props => {
 		.style("stroke", d => {
 			return isUpday(d) ? colorIncreaseStroke : colorDecreaseStroke;
 		})
+		.on("mousemove", d=> {
+			showColumndata(d);
+		})
 		.on("mouseover", d => {
 			showTooltip(d);
 			showXAxisTip(d);
@@ -322,6 +358,9 @@ let drawMainChart = props => {
 		})
 		.style("stroke", d => {
 			return isUpday(d) ? colorIncreaseStroke : colorDecreaseStroke;
+		})
+		.on("mousemove", d=> {
+			showColumndata(d);
 		})
 		.on("mouseover", d => {
 			showTooltip(d);
