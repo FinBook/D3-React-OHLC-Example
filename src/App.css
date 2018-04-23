@@ -32,15 +32,19 @@
 }
 
 
-.axis text {
+.x-axis text, .y-axis text{
 	font: 10px sans-serif;
 	color: rgba(255, 255, 255, 0.6);
 }
 
-.axis path,
-.axis line {
+.x-axis path,
+.x-axis line,
+.y-axis path,
+.y-axis line {
 	fill: none;
 	stroke: rgba(255, 255, 255, 0.6);
 	shape-rendering: crispEdges;
 }
+
+
 
