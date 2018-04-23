@@ -2,12 +2,13 @@ body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
+  background: rgba(0,0,0,1)
 }
 
 .d3chart-container {
   position: fixed;
-  top: 220px;
-  left: 200px;
+  top: 60px;
+  left: 0px;
 }
 
 #chart {
@@ -23,7 +24,7 @@ body {
 }
 
 #chart text {
-  fill: white;
+  fill: rgba(150,150,150,1);
   font: 10px sans-serif;
   text-anchor: end;
 }
@@ -40,7 +41,7 @@ body {
   z-index: 5;
 }
 .single-bar:hover .bar-background {
-	fill: rgba(30,30,30,1);
+	fill: rgba(50,50,50,.6);
 }
 
 .bar-tooltip-hide {

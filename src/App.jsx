@@ -2,7 +2,6 @@ import React, {Component} from "react";
 import * as d3 from "d3";
 import D3chart from "./D3chart";
 
-import logo from "./logo.svg";
 import "./App.css";
 import mockdata from "./d3Related/MockData.json";
 import mockdata1 from "./d3Related/MockData1.json";
@@ -57,10 +56,6 @@ class App extends Component {
 
 		return (
 			<div className="App">
-				<header className="App-header">
-					<img src={logo} className="App-logo" alt="logo" />
-					<h1 className="App-title">Welcome to React</h1>
-				</header>
 				{/*<p style={{display : 'flex', flexDirection : 'column'}}>
 					{data.map((x, i) => {
 						return <span key={i}>{x.date + ' ['+ x.open + ', ' + x.close + ', ' + x.high + ', ' + x.low + "] "}</span>;
@@ -70,7 +65,7 @@ class App extends Component {
 				<div className="d3chart-container">
 					<D3chart data={data} pickedDatum={this.pickedDatum} />
 				</div>
-				<div style={{position: "absolute", top: "730px", left: "200px"}}>
+				<div style={{position: "absolute", top: "560px", left: "20px", color:"white"}}>
 					<span>Current Datum: </span>
 					<span>
 						{currentdata

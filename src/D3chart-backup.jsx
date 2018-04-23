@@ -196,9 +196,7 @@ let drawMainChart = props => {
 				.style("opacity", 0)
 				.style("z-index", -1);
 			hideYAxisTip();
-		});
-
-
+		})
 	//Chart Grid
 	chart
 		.append("g")
@@ -339,15 +337,10 @@ export default class D3chart extends React.Component {
 		drawMainChart(this.props);
 	}
 
-	shouldComponentUpdate(nextProps) {		
-		console.log("props changed")
-		//redraw when data is changed
-		if (nextProps.data && JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data)) {
-			console.log("Redraw chart")
+	shouldComponentUpdate(nextProps) {
+		if (nextProps.data) {
 			drawMainChart(nextProps);
-			return false;
 		}
-		console.log("Did not redraw")
 		return false;
 	}
 
