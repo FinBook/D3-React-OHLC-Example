@@ -34,15 +34,17 @@
 
 .x-axis text, .y-axis text{
 	font: 10px sans-serif;
-	color: rgba(255, 255, 255, 0.6);
+	color: rgba(255, 255, 255, 0.4);
 }
 
 .x-axis path,
 .x-axis line,
 .y-axis path,
-.y-axis line {
+.y-axis line,
+.y-axis-v path,
+.y-axis-v line {
 	fill: none;
-	stroke: rgba(255, 255, 255, 0.6);
+	stroke: rgba(255, 255, 255, 0.4);
 	shape-rendering: crispEdges;
 }
 

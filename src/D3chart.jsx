@@ -4,14 +4,18 @@ import moment from "moment";
 
 let Coinname = "Ethereum(ETH)";
 
-let chartLeftOffset = 0,
-	chartTopOffset = 60;
+//let chartLeftOffset = 0,
+let	chartTopOffset = 60;
 let colorIncreaseFill = "rgba(94,137,50,1)",
 	colorDecreaseFill = "rgba(140,41,41,1)",
 	colorIncreaseStroke = "rgba(136,208,64,1)",
-	colorDecreaseStroke = "rgba(214,48,48,1)";
-let margin = {top: 40, right: 30, bottom: 30, left: 60};
-let width = 960 - margin.left - margin.right,
+	colorDecreaseStroke = "rgba(214,48,48,1)",
+	colorIncreaseFillV = "rgba(56,82,30,0.4)",
+	colorDecreaseFillV = "rgba(84,25,25,0.4)",
+	colorIncreaseStrokeV = "rgba(104,157,50,0.4)",
+	colorDecreaseStrokeV = "rgba(161,39,39,0.4)";
+let margin = {top: 40, right: 60, bottom: 30, left: 60};
+let width = 1060 - margin.left - margin.right,
 	height = 500 - margin.top - margin.bottom,
 	rectWidth = 11,
 	backrectWidth;
@@ -20,16 +24,17 @@ let chart, chartdata, bars;
 
 let drawMainChart = props => {
 	const {data, pickedDatum} = props;
-	let x, y, new_x;
-	let xAxis, yAxis, xGrid, yGrid;
+	let x, y, vy, new_x;
+	let xAxis, yAxis, yAxisV, xGrid, yGrid;
 
 	let maxDate = d3.max(data, d => {
 		return d.date;
 	});
-
+	/*
 	let minDate = d3.min(data, d => {
 		return d.date;
 	});
+	*/
 	let extentStart = new Date(Date.parse(maxDate) - 8.64e7 * 150);
 	let extentEnd = new Date(Date.parse(maxDate) + 8.64e7 * 10);
 
@@ -69,10 +74,11 @@ let drawMainChart = props => {
 				(isUpday(d) ? "upday-column" : "downday-column") +
 				" info-column'>" +
 				d.close.toFixed(2) +
-				"</div>"
+				"</div> V: " + 
+				d.volumn.toFixed(0)
 		);
 	};
-
+	/*
 	let showTooltip = d => {
 		tooltip
 			.transition()
@@ -93,7 +99,7 @@ let drawMainChart = props => {
 			.style("left", d3.event.pageX - 15 - chartLeftOffset + "px")
 			.style("top", d3.event.pageY - 70 - chartTopOffset + "px");
 	};
-
+	*/
 	let showXAxisTip = d => {
 		let xValue;
 		let format = d3.timeFormat("%b %d");
@@ -115,6 +121,16 @@ let drawMainChart = props => {
 			.style("top", d3.event.clientY - chartTopOffset - 9.5 + "px");
 	};
 
+	let showYAxisTipV = () => {
+		let yValueV;
+		yValueV = vy.invert(d3.event.clientY - chartTopOffset - margin.top).toFixed(0);
+		yAxistipV.style("opacity", 1).style("z-index", 8);
+		yAxistipV
+			.html(yValueV)
+			.style("left", width + margin.left + 4 + "px")
+			.style("top", d3.event.clientY - chartTopOffset - 9.5 + "px");
+	}
+	/*
 	let hideTooltip = () => {
 		tooltip
 			.transition()
@@ -122,7 +138,7 @@ let drawMainChart = props => {
 			.style("opacity", 0)
 			.style("z-index", -1);
 	};
-
+	*/
 	let hideXAxisTip = () => {
 		xAxistip.style("opacity", 0).style("z-index", -1);
 	};
@@ -130,35 +146,65 @@ let drawMainChart = props => {
 	let hideYAxisTip = () => {
 		yAxistip.style("opacity", 0).style("z-index", -1);
 	};
+
+	let hideYAxisTipV = () => {
+		yAxistipV.style("opacity", 0).style("z-index", -1);
+	}
 	//Scales
 	x = d3
 		.scaleTime()
 		.domain([start, end])
 		.range([0, width /*(rectWidth + 20) * (data.length + 1)*/]);
+	
+	//showing range
+	let showedData = data.filter((d, i) => {
+		return i > data.length - 32
+	})
+	let yMin = d3.min(
+			showedData.map(d => {
+				return d.low;
+			})),
+		yMax = d3.max(
+			showedData.map(d => {
+				return d.high;
+			})),
+		yRange = yMax - yMin;
+	
+	let v_yMax = d3.max(
+			showedData.map(d => {
+				return d.volumn;
+			}));
+
 	y = d3
 		.scaleLinear()
 		.domain([
-			d3.min(
-				data.map(d => {
-					return d.low;
-				})
-			) - 2,
-			d3.max(
-				data.map(d => {
-					return d.high;
-				})
-			) + 2
+			(yMin - 0.7 * yRange) > 0? yMin - 0.7 * yRange : 0
+			,
+			yMax + 0.2 * yRange
 		])
 		.range([height, 0]);
-
+	
+	vy = d3 
+		.scaleLinear()
+		.domain([0, 3 * v_yMax])
+		.range([height, 0])
+	
 	new_x = x;
 	xAxis = d3
 		.axisBottom()
 		.scale(x)
 		.ticks(8)
 		.tickFormat(d3.timeFormat("%b %d"));
-	yAxis = d3.axisLeft().scale(y);
+	yAxis = d3
+		.axisLeft()
+		.scale(y)
+		.ticks(10);
 
+	yAxisV = d3
+		.axisRight()
+		.scale(vy)
+		.ticks(10);
+	
 	xGrid = d3
 		.axisBottom()
 		.scale(x)
@@ -169,7 +215,7 @@ let drawMainChart = props => {
 	yGrid = d3
 		.axisLeft()
 		.scale(y)
-		.ticks(8)
+		.ticks(10)
 		.tickSize(-width)
 		.tickFormat("");
 	//Zoom
@@ -189,6 +235,7 @@ let drawMainChart = props => {
 	d3.selectAll(".tooltip").remove();
 	d3.selectAll(".x-axis-tip").remove();
 	d3.selectAll(".y-axis-tip").remove();
+	d3.selectAll(".y-axis-tip-v").remove();
 	d3.selectAll(".track-line").remove();
 	d3.selectAll(".info-bar").remove();
 	d3.selectAll(".info-column").remove();
@@ -198,13 +245,15 @@ let drawMainChart = props => {
 		.append("div")
 		.attr("class", "info-bar")
 		.html(Coinname);
-
+	
+	/*
 	//Tooltip div
 	let tooltip = d3
 		.select("#trade-chart")
 		.append("div")
 		.attr("class", "tooltip")
 		.style("opacity", 0);
+	*/
 
 	//Axis tip div
 	let xAxistip = d3
@@ -217,7 +266,11 @@ let drawMainChart = props => {
 		.append("div")
 		.attr("class", "y-axis-tip")
 		.style("opacity", 0);
-
+	let yAxistipV = d3
+		.select("#trade-chart")
+		.append("div")
+		.attr("class", "y-axis-tip-v")
+		.style("opacity", 0);
 	//Mouse track grid line
 	let yLine = d3
 		.select("#trade-chart")
@@ -240,10 +293,12 @@ let drawMainChart = props => {
 				.style("left", margin.left + 1 + "px")
 				.style("top", d3.event.clientY - chartTopOffset - 0.5 + "px");
 			showYAxisTip();
+			showYAxisTipV();
 		})
 		.on("mouseout", d => {
 			yLine.style("opacity", 0).style("z-index", -1);
 			hideYAxisTip();
+			hideYAxisTipV();
 		});
 
 	//Chart Grid
@@ -264,10 +319,17 @@ let drawMainChart = props => {
 		.call(xAxis);
 	gX.selectAll("text").style("text-anchor", "middle");
 
-	let gY = chart
+	chart
 		.append("g")
 		.attr("class", "y-axis")
 		.call(yAxis);
+
+	chart
+		.append("g")
+		.attr("class", "y-axis-v")
+		.attr("transform", "translate(" + width + ", 0)")
+		.call(yAxisV)
+		.selectAll("text").style("text-anchor", "start");
 	//Chart Data
 	chart
 		.append("defs")
@@ -394,6 +456,41 @@ let drawMainChart = props => {
 			//hideTooltip();
 			hideXAxisTip();
 		});
+	
+	//Volumn Bars
+	bars
+		.append("rect")
+		.attr("class", "bar-rect-v")
+		.attr("x", d => {
+			return x(new Date(Date.parse(d.date))) - rectWidth / 2;
+		})
+		.attr("y", d => {
+			return vy(d.volumn);
+		})
+		.attr("width", rectWidth)
+		.attr("height", d => {
+			return height - vy(d.volumn);
+		})
+		.style("fill", d => {
+			return isUpday(d) ? colorIncreaseFillV : colorDecreaseFillV;
+		})
+		.style("stroke", d => {
+			return isUpday(d) ? colorIncreaseStrokeV : colorDecreaseStrokeV
+		})
+		.on("mousemove", d => {
+			showColumndata(d);
+		})
+		.on("mouseover", d => {
+			//showTooltip(d);
+			showXAxisTip(d);
+		})
+		.on("mouseout", d => {
+			//hideTooltip();
+			hideXAxisTip();
+		})
+		.on("mousedown", d => {
+			pickedDatum(d);
+		});
 
 	chart.call(zoom);
 	
@@ -419,23 +516,35 @@ let drawMainChart = props => {
 		gX.call(xAxis.scale(new_x));
 		gX.selectAll("text").style("text-anchor", "middle");
 		gridX.call(xGrid.scale(new_x));
-		newRangedData = data.filter( d => {
-			return (moment(d.date).isAfter(new_x.invert(0)) && moment(d.date).isBefore(new_x.invert(width)))
+		newRangedData = data.filter( (d) => {
+			return (moment(d.date).isAfter(new_x.invert(-rectWidth)) && moment(d.date).isBefore(new_x.invert(width+rectWidth)))
 		})
 		let new_y = y;
-		new_y.domain([
-			d3.min(
+		let new_vy = vy;
+		let new_yMin = d3.min(
 				newRangedData.map(d => {
 					return d.low;
-				})
-			) - 2,
-			d3.max(
+				})),
+			new_yMax = d3.max(
 				newRangedData.map(d => {
 					return d.high;
+				})),
+			new_yRange = new_yMax - new_yMin;
+		let new_v_yMax = d3.max(
+				newRangedData.map(d => {
+					return d.volumn;
 				})
-			) + 2
-		])
-		d3.selectAll(".y-axis").call(d3.axisLeft().scale(new_y));
+			);
+		new_y.domain([
+			(new_yMin - 0.7 * new_yRange) > 0? new_yMin - 0.7 * new_yRange : 0
+			,
+			new_yMax + 0.2 * new_yRange
+		]);
+		new_vy.domain([0, 3 * new_v_yMax]);
+		gridY.call(yGrid.scale(new_y).ticks(10));
+		d3.selectAll(".y-axis").call(d3.axisLeft().scale(new_y).ticks(10));
+		d3.selectAll(".y-axis-v").call(d3.axisRight().scale(new_vy).ticks(10));
+		d3.selectAll(".y-axis-v").selectAll("text").style("text-anchor", "start");
 		rectWidth = (new_x(new Date("2000-01-02")) - new_x(new Date("2000-01-01"))) * 0.8 - 1;
 		backrectWidth = (new_x(new Date("2000-01-02")) - new_x(new Date("2000-01-01"))) * 1 + 2;
 		d3
@@ -476,6 +585,19 @@ let drawMainChart = props => {
 					{x: new_x(new Date(Date.parse(d.date))), y: isUpday(d) ? y(d.open) : y(d.close)}
 				]);
 			});
+		d3
+			.selectAll(".bar-rect-v")
+			.data(data)
+			.attr("x", d => {
+				return new_x(new Date(Date.parse(d.date))) - rectWidth / 2;
+			})
+			.attr("y", d => {
+				return new_vy(d.volumn)
+			})
+			.attr("width", rectWidth)
+			.attr("height", d => {
+				return height - new_vy(d.volumn);
+			})
 	}
 };
 
