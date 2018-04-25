@@ -121,6 +121,7 @@ body {
   stroke-opacity: 0.7;
   shape-rendering: crispEdges;
   z-index: 0;
+  pointer-events: none;
 }
 
 .info-bar {
@@ -144,4 +145,8 @@ body {
   width: 42px;
   text-align: left;
   margin-left: 5px;
+}
+
+.line-sma, .line-sma {
+  pointer-events: none;
 }

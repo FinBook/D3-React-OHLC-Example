@@ -15,36 +15,68 @@ class LineCalculation {
         let outData = [];
         let i;
         for(i=0; i< data.length; i++){
-            let subSet;
-            let avarange = 0;
-            subSet = this.getSubset(data, range, i);
+            let subSet = this.getSubset(data, range, i);
+            let average = 0; 
             subSet.forEach( d => {
                 switch(source){
                     case "open":
-                        avarange += d.open;
+                        average += d.open;
                         break;
                     case "high":
-                        avarange += d.high;
+                        average += d.high;
                         break;
                     case "low":
-                        avarange += d.low;
+                        average += d.low;
                         break;
                     case "close":
-                        avarange += d.close;
+                        average += d.close;
                         break;
                     default:
-                        avarange += d.close;
+                        average += d.close;
                         break;
                 }
             })
-            avarange /= subSet.length;
-            outData.push({"date": data[i].date, "SMA": avarange});
+            average /= subSet.length;
+            outData.push({"date": data[i].date, "SMA": average});
         }
         return outData;
     }
 
     calEMA = (data, range, source) => {
-
+        let outData = [];
+        let i;
+        function EMA(i) {
+            let data_value;
+            let window = i < range ? i : range;
+            switch(source){
+                case "open":
+                    data_value = data[i].open;
+                    break;
+                case "high":
+                    data_value = data[i].high;
+                    break;
+                case "low":
+                    data_value = data[i].low;
+                    break;
+                case "close":
+                    data_value = data[i].close;
+                    break;
+                default:
+                    data_value = data[i].close;
+                    break;
+            }
+            if(i === 0) {
+                return data_value;
+            }
+            else {
+                return (2 * data_value + (window - 1) * EMA(i - 1))/(window + 1)
+            }
+        }
+        for(i=0; i< data.length; i++){
+            let e_average = EMA(i);           
+            outData.push({"date": data[i].date, "EMA": e_average});
+        }
+        return outData;
     }
 }
 

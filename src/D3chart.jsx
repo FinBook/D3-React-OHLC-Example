@@ -15,7 +15,8 @@ let colorIncreaseFill = "rgba(94,137,50,1)",
 	colorDecreaseFillV = "rgba(84,25,25,0.4)",
 	colorIncreaseStrokeV = "rgba(104,157,50,0.4)",
 	colorDecreaseStrokeV = "rgba(161,39,39,0.4)",
-	colorSMA = "rgba(0,186,255,0.5)";
+	colorSMA = "rgba(0,186,255,0.7)",
+	colorEMA = "rgba(255,129,0,0.7)";
 let margin = {top: 40, right: 60, bottom: 30, left: 60};
 let width = 1060 - margin.left - margin.right,
 	height = 500 - margin.top - margin.bottom,
@@ -29,7 +30,9 @@ let drawMainChart = props => {
 	let x, y, vy, new_x;
 	let xAxis, yAxis, yAxisV, xGrid, yGrid;
 	let data_SMA = lineCalculation.calSMA(data, 5, "close");
+	let data_EMA = lineCalculation.calEMA(data, 5, "close");
 	console.log(data_SMA);
+	console.log(data_EMA);
 	let maxDate = d3.max(data, d => {
 		return d.date;
 	});
@@ -58,8 +61,15 @@ let drawMainChart = props => {
 		.y(d => {
 			return y(d.SMA)
 		});
-
-
+	let lineEMA = d3
+		.line()
+		.x(d => {
+			return x(new Date(Date.parse(d.date)))
+		})
+		.y(d => {
+			return y(d.EMA)
+		});
+	
 
 	let line = d3
 		.line()
@@ -519,7 +529,17 @@ let drawMainChart = props => {
 		.attr("stroke-linejoin", "round")
       	.attr("stroke-linecap", "round")
 		.attr("stroke-width", 1)
-		  
+	//EMA
+	chartdata.append("path")
+		.attr("class", "line-ema")
+		.datum(data_EMA)
+		.attr("d", lineEMA)
+		.attr("fill", "none")
+		.attr("stroke", colorEMA)
+		.attr("stroke-linejoin", "round")
+      	.attr("stroke-linecap", "round")
+		.attr("stroke-width", 1)
+	
 	chart.call(zoom);
 	
 	//Zoom function
@@ -584,7 +604,14 @@ let drawMainChart = props => {
 				.y(d => {
 					return new_y(d.SMA)
 			});
-
+		let new_lineEMA = d3
+			.line()
+			.x(d => {
+				return new_x(new Date(Date.parse(d.date)))
+			})
+			.y(d => {
+				return new_y(d.EMA)
+			});
 
 		d3
 			.selectAll(".bar-background")
@@ -640,7 +667,11 @@ let drawMainChart = props => {
 		d3
 			.selectAll(".line-sma")
 			.datum(data_SMA)
-			.attr("d", new_lineSMA)
+			.attr("d", new_lineSMA);
+		d3
+			.selectAll(".line-ema")
+			.datum(data_EMA)
+			.attr("d", new_lineEMA);
 	}
 };
 

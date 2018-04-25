@@ -32,9 +32,10 @@
 }
 
 
-.x-axis text, .y-axis text{
+.x-axis text, .y-axis text, .y-axis-v text{
 	font: 10px sans-serif;
 	color: rgba(255, 255, 255, 0.4);
+	pointer-events: none;
 }
 
 .x-axis path,
@@ -46,6 +47,7 @@
 	fill: none;
 	stroke: rgba(255, 255, 255, 0.4);
 	shape-rendering: crispEdges;
+	pointer-events: none;
 }
 
 
