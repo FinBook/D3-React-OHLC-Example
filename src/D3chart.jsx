@@ -1,5 +1,6 @@
 import React from "react";
 import * as d3 from "d3";
+import lineCalculation from "./LineCal.js";
 import moment from "moment";
 
 let Coinname = "Ethereum(ETH)";
@@ -13,7 +14,8 @@ let colorIncreaseFill = "rgba(94,137,50,1)",
 	colorIncreaseFillV = "rgba(56,82,30,0.4)",
 	colorDecreaseFillV = "rgba(84,25,25,0.4)",
 	colorIncreaseStrokeV = "rgba(104,157,50,0.4)",
-	colorDecreaseStrokeV = "rgba(161,39,39,0.4)";
+	colorDecreaseStrokeV = "rgba(161,39,39,0.4)",
+	colorSMA = "rgba(0,186,255,0.5)";
 let margin = {top: 40, right: 60, bottom: 30, left: 60};
 let width = 1060 - margin.left - margin.right,
 	height = 500 - margin.top - margin.bottom,
@@ -26,7 +28,8 @@ let drawMainChart = props => {
 	const {data, pickedDatum} = props;
 	let x, y, vy, new_x;
 	let xAxis, yAxis, yAxisV, xGrid, yGrid;
-
+	let data_SMA = lineCalculation.calSMA(data, 5, "close");
+	console.log(data_SMA);
 	let maxDate = d3.max(data, d => {
 		return d.date;
 	});
@@ -45,6 +48,18 @@ let drawMainChart = props => {
 	let isUpday = d => {
 		return d.close > d.open;
 	};
+
+	//Line Calculaiton
+	let lineSMA = d3
+		.line()
+		.x(d => {
+			return x(new Date(Date.parse(d.date)))
+		})
+		.y(d => {
+			return y(d.SMA)
+		});
+
+
 
 	let line = d3
 		.line()
@@ -228,6 +243,7 @@ let drawMainChart = props => {
 	rectWidth = (x(new Date("2000-01-02")) - x(new Date("2000-01-01"))) * 0.8 - 1;
 	backrectWidth = (x(new Date("2000-01-02")) - x(new Date("2000-01-01"))) * 1 + 2;
 
+	//Clear Chart Canvas
 	d3.selectAll("g").remove();
 	d3.selectAll("rect").remove();
 	d3.selectAll("text").remove();
@@ -239,6 +255,8 @@ let drawMainChart = props => {
 	d3.selectAll(".track-line").remove();
 	d3.selectAll(".info-bar").remove();
 	d3.selectAll(".info-column").remove();
+	d3.selectAll(".line-sma").remove();
+
 	//Info-bar div
 	let infoBar = d3
 		.select("#trade-chart")
@@ -279,7 +297,6 @@ let drawMainChart = props => {
 		.style("opacity", 0);
 
 	//Chart
-
 	chart = d3
 		.select("#chart")
 		.attr("width", width + margin.left + margin.right)
@@ -492,6 +509,17 @@ let drawMainChart = props => {
 			pickedDatum(d);
 		});
 
+	//SMA
+	chartdata.append("path")
+		.attr("class", "line-sma")
+		.datum(data_SMA)
+		.attr("d", lineSMA)
+		.attr("fill", "none")
+		.attr("stroke", colorSMA)
+		.attr("stroke-linejoin", "round")
+      	.attr("stroke-linecap", "round")
+		.attr("stroke-width", 1)
+		  
 	chart.call(zoom);
 	
 	//Zoom function
@@ -547,6 +575,17 @@ let drawMainChart = props => {
 		d3.selectAll(".y-axis-v").selectAll("text").style("text-anchor", "start");
 		rectWidth = (new_x(new Date("2000-01-02")) - new_x(new Date("2000-01-01"))) * 0.8 - 1;
 		backrectWidth = (new_x(new Date("2000-01-02")) - new_x(new Date("2000-01-01"))) * 1 + 2;
+
+		let new_lineSMA = d3
+			.line()
+				.x(d => {
+					return new_x(new Date(Date.parse(d.date)))
+			})
+				.y(d => {
+					return new_y(d.SMA)
+			});
+
+
 		d3
 			.selectAll(".bar-background")
 			.data(data)
@@ -598,6 +637,10 @@ let drawMainChart = props => {
 			.attr("height", d => {
 				return height - new_vy(d.volumn);
 			})
+		d3
+			.selectAll(".line-sma")
+			.datum(data_SMA)
+			.attr("d", new_lineSMA)
 	}
 };
 

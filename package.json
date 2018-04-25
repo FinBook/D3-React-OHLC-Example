@@ -5,6 +5,7 @@
   "dependencies": {
     "@types/d3": "^5.0.0",
     "d3": "^5.0.0",
+    "immutable": "^3.8.2",
     "moment": "^2.22.1",
     "react": "^16.3.1",
     "react-dom": "^16.3.1",
