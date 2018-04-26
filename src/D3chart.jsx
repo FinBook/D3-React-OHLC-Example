@@ -30,8 +30,9 @@ let drawMainChart = props => {
 	const {data, pickedDatum, zoomState, settings} = props;
 	let x, y, vy, new_x;
 	let xAxis, yAxis, yAxisV, xGrid, yGrid;
-	let data_SMA = lineCalculation.calSMA(data, 5, "close");
-	let data_EMA = lineCalculation.calEMA(data, 5, "close");
+	let data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
+	let data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
+	//console.log(new Date().getTimezoneOffset())
 
 	//Zoom steps
 	let zoomStep, zoomFormat, zoomFormatTips;
@@ -441,7 +442,7 @@ let drawMainChart = props => {
 		.attr("y2", "100%");
 	gradient.append("stop")
 		.attr("offset", "0%")
-		.attr("style", "stop-color:rgba(0, 178, 255, 0.6); stop-opacity:0.6;");
+		.attr("style", "stop-color:rgba(0, 178, 255, 0.7); stop-opacity:0.7;");
 	gradient.append("stop")
 		.attr("offset", "75%")
 		.attr("style", "stop-color:rgba(255, 255, 255, 0); stop-opacity:0;");
@@ -553,6 +554,25 @@ let drawMainChart = props => {
 			hideXAxisTip();
 		});
 
+	//Mountain Line
+	chartdata
+		.append("path")
+		.attr("class", "line-mountain")
+		.datum(data)
+		.attr("d", lineMountain)
+		.attr("fill", 'none')
+		.attr("stroke", "white")
+		.attr("stroke-linejoin", "round")
+		.attr("stroke-linecap", "round")
+		.attr("stroke-width", 1);
+	chartdata
+		.append("path")
+		.attr("class", "line-mountain-area")
+		.datum(data)
+		.attr("d", lineMountainArea)
+		.attr("stroke", "none")
+		.attr("fill", "url(#svgGradient)");
+
 	//Volumn Bars
 	bars
 		.append("rect")
@@ -589,24 +609,7 @@ let drawMainChart = props => {
 		});
 	
 	
-	//Mountain Line
-	chartdata
-		.append("path")
-		.attr("class", "line-mountain")
-		.datum(data)
-		.attr("d", lineMountain)
-		.attr("fill", 'none')
-		.attr("stroke", "white")
-		.attr("stroke-linejoin", "round")
-		.attr("stroke-linecap", "round")
-		.attr("stroke-width", 1.5);
-	chartdata
-		.append("path")
-		.attr("class", "line-mountain-area")
-		.datum(data)
-		.attr("d", lineMountainArea)
-		.attr("stroke", "none")
-		.attr("fill", "url(#svgGradient)");
+	
 		
 	//SMA
 	chartdata
@@ -897,17 +900,19 @@ export default class D3chart extends React.Component {
 	}
 
 	shouldComponentUpdate(nextProps) {
-		console.log("props changed");
-		//redraw when data is changed
+		
 		if (
 			nextProps.data &&
-			JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data)
+			(JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data) ||
+			JSON.stringify(nextProps.settings.linePara) !== JSON.stringify(this.props.settings.linePara))
 		) {
+			//redraw when data is changed
 			console.log("Redraw chart (New dataset)");
 			drawMainChart(nextProps);
 			return false;
 		}
 		if(JSON.stringify(nextProps.settings) !== JSON.stringify(this.props.settings)) {
+			//update when settings are changed
 			console.log("Update chart (New settings)");
 			updateMainChart(nextProps);
 			return false;

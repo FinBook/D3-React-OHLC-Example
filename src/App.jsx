@@ -5,7 +5,7 @@ import D3chart from "./D3chart";
 import "./App.css";
 import mockdata from "./d3Related/MockData.json";
 import mockdata1 from "./d3Related/MockData1.json";
-import mockdata2 from "./d3Related/MockData2.json";
+//import mockdata2 from "./d3Related/MockData2.json";
 
 class App extends Component {
 	constructor(props) {
@@ -18,7 +18,11 @@ class App extends Component {
 			currentdata: null,
 			showSMA: true,
 			showEMA: true,
-			mainLineType: "candlestick"
+			mainLineType: "candlestick",
+			rangeSMA: 5,
+			sourceSMA: "close",
+			rangeEMA: 5,
+			sourceEMA: "close"
 		};
 	}
 
@@ -36,12 +40,18 @@ class App extends Component {
 			currentdata: null
 		});
 	};
-	handleClick3 = () => {
+	handleLine = () => {
+		let inputrangeSMA = this.refs.range_SMA,
+			inputsourceSMA = this.refs.source_SMA,
+			inputrangeEMA = this.refs.range_EMA,
+			inputsourceEMA = this.refs.source_EMA;
 		this.setState({
-			zoom: 2,
-			data: mockdata2,
-			currentdata: null
-		});
+			rangeSMA: inputrangeSMA.value || 5,
+			sourceSMA: inputsourceSMA.value || "close",
+			rangeEMA: inputrangeEMA.value || 5,
+			sourceEMA: inputsourceEMA.value || "close"
+		}) 
+		
 	};
 
 	pickedDatum = d => {
@@ -72,13 +82,20 @@ class App extends Component {
 
 
 	render() {
-		const {data, currentdata, zoom, showSMA, showEMA, mainLineType} = this.state;
+		const {data, currentdata, zoom, showSMA, showEMA, mainLineType, rangeSMA, sourceSMA, rangeEMA, sourceEMA} = this.state;
 		let date;
 		let format = d3.timeFormat("%Y %b %d %H:%M");
+		let linePara = {
+			"rangeSMA": rangeSMA,
+			"sourceSMA": sourceSMA,
+			"rangeEMA": rangeEMA,
+			"sourceEMA": sourceEMA
+		}
 		let settings = {
 			"showSMA": showSMA,
 			"showEMA": showEMA,
-			"mainLineType": mainLineType
+			"mainLineType": mainLineType,
+			"linePara": linePara			
 		}
 		date = currentdata ? format(new Date(Date.parse(currentdata.date))) : null;
 
@@ -89,7 +106,7 @@ class App extends Component {
 						return <span key={i}>{x.date + ' ['+ x.open + ', ' + x.close + ', ' + x.high + ', ' + x.low + "] "}</span>;
 					})}
 				</p>*/}
-				<div>
+				<div style={{display: "flex", flexDirection: "row"}}>
 					<button className="change-button" onClick={this.handleClick1}>Data 1 (Daily)</button>
 					<button className="change-button" onClick={this.handleClick2}>Data 2 (Hourly)</button>
 					<input
@@ -98,12 +115,45 @@ class App extends Component {
 						checked={showSMA}
 						onChange={this.handleShowSMA} />
 					<span style={{color: "white", fontSize: 12}}>SMA</span>
+					<ul className="line-settings">
+						<li>
+							<span>range</span>
+							<input
+								ref="range_SMA"
+								placeholder={rangeSMA}
+								style={{width: 50, marginLeft: 5}}/>
+						</li>
+						<li>
+							<span>source</span>
+							<input
+								ref="source_SMA"
+								placeholder={sourceSMA}
+								style={{width: 50, marginLeft: 5}}/>
+						</li>
+					</ul>
 					<input
 						name="showEMA"
 						type="checkbox"
 						checked={showEMA}
 						onChange={this.handleShowEMA} />
 					<span style={{color: "white", fontSize: 12}}>EMA</span>
+					<ul className="line-settings">
+						<li>
+							<span>range</span>
+							<input
+								ref="range_EMA"
+								placeholder={rangeEMA}
+								style={{width: 50, marginLeft: 5}}/>
+						</li>
+						<li>
+							<span>source</span>
+							<input
+								ref="source_EMA"
+								placeholder={sourceEMA}
+								style={{width: 50, marginLeft: 5}}/>
+						</li>
+					</ul>
+					<button className="change-button" onClick={this.handleLine}>Update Lines</button>
 					<span style={{color: "white", fontSize: 12, marginLeft: 10}}>Graph Type:</span>
 					<input
 						name="mainLineType"
