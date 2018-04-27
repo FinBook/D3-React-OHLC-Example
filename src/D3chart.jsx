@@ -25,10 +25,11 @@ let rectWidth = 11,
 	backrectWidth;
 let xAxistipWidth = 40;
 let chart, chartdata, bars;
+let new_x, new_y;
 
 let drawMainChart = props => {
 	const {data, pickedDatum, zoomState, settings} = props;
-	let x, y, vy, new_x;
+	let x, y, vy;
 	let xAxis, yAxis, yAxisV, xGrid, yGrid;
 	let data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
 	let data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
@@ -691,7 +692,7 @@ let drawMainChart = props => {
 				moment(d.date).isBefore(new_x.invert(width + rectWidth))
 			);
 		});
-		let new_y = y;
+		
 		let new_vy = vy;
 		let new_yMin = d3.min(
 				newRangedData.map(d => {
@@ -709,6 +710,7 @@ let drawMainChart = props => {
 				return d.volumn;
 			})
 		);
+		new_y = y;
 		new_y.domain([new_yMin - 0.7 * new_yRange > 0 ? new_yMin - 0.7 * new_yRange : 0, new_yMax + 0.2 * new_yRange]);
 		new_vy.domain([0, 3 * new_v_yMax]);
 		gridY.call(yGrid.scale(new_y).ticks(10));
@@ -848,6 +850,8 @@ let drawMainChart = props => {
 			.datum(data)
 			.attr("d", new_lineMountainArea);
 	}
+
+	
 };
 
 let updateMainChart = props => {
@@ -894,6 +898,36 @@ let updateMainChart = props => {
 	}
 }
 
+let updateLines = props => {
+	const {data, settings} = props;
+	let data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
+	let data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
+	let new_lineSMA = d3
+			.line()
+			.x(d => {
+				return new_x(new Date(Date.parse(d.date)));
+			})
+			.y(d => {
+				return new_y(d.SMA);
+			});
+		let new_lineEMA = d3
+			.line()
+			.x(d => {
+				return new_x(new Date(Date.parse(d.date)));
+			})
+			.y(d => {
+				return new_y(d.EMA);
+			});
+	d3
+		.selectAll(".line-sma")
+		.datum(data_SMA)
+		.attr("d", new_lineSMA);
+	d3
+		.selectAll(".line-ema")
+		.datum(data_EMA)
+		.attr("d", new_lineEMA);
+}
+
 export default class D3chart extends React.Component {
 	componentDidMount() {
 		drawMainChart(this.props);
@@ -903,8 +937,7 @@ export default class D3chart extends React.Component {
 		
 		if (
 			nextProps.data &&
-			(JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data) ||
-			JSON.stringify(nextProps.settings.linePara) !== JSON.stringify(this.props.settings.linePara))
+			JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data)
 		) {
 			//redraw when data is changed
 			console.log("Redraw chart (New dataset)");
@@ -915,6 +948,7 @@ export default class D3chart extends React.Component {
 			//update when settings are changed
 			console.log("Update chart (New settings)");
 			updateMainChart(nextProps);
+			updateLines(nextProps);
 			return false;
 		}
 		console.log("Did not redraw (No data/settings change)");
