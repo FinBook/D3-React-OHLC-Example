@@ -49,7 +49,7 @@ let drawMainChart = props => {
 			zoomStep = 3.6e6;
 			zoomFormat = (d) => {return d.getHours() ? d3.timeFormat("%H:%M")(d) : d3.timeFormat("%b %d")(d)};
 			zoomFormatTips = "%b %d %H:%M";
-			pickFormat = "%H:%M"
+			pickFormat = "%b %d %H"
 			break;
 		default:
 			zoomStep = 3e6;
@@ -600,6 +600,7 @@ let drawMainChart = props => {
 			//hideTooltip();
 			hideXAxisTip();
 		});
+	/*
 	//Mountain Comparison Base
 	chartdata
 		.append("path")
@@ -611,6 +612,7 @@ let drawMainChart = props => {
 		.attr("stroke-linejoin", "round")
 		.attr("stroke-linecap", "round")
 		.attr("stroke-width", 1);
+	*/
 	//Mountain Line
 	chartdata
 		.append("path")
@@ -770,6 +772,7 @@ let drawMainChart = props => {
 		new_y.domain([new_yMin - new_yRange > 0 ? new_yMin - new_yRange : 0, new_yMax + 0.2 * new_yRange]);
 		new_vy.domain([0, new_v_yMax]);
 		leftEdgeDate = d3.timeFormat(pickFormat)(new_x.invert(0));
+		
 		leftEdgeDatum = data.filter(d => {
 			return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
 		});
