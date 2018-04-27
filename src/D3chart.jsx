@@ -28,7 +28,7 @@ let chart, chartdata, bars;
 let new_x, new_y;
 
 let drawMainChart = props => {
-	const {data, pickedDatum, zoomState, settings} = props;
+	const {data, pickedDatum, zoomState, settings, mcbasedata} = props;
 	let x, y, vy, py;
 	let xAxis, yAxis, yAxisV, yAxisP, xGrid, yGrid;
 	let data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
@@ -127,7 +127,15 @@ let drawMainChart = props => {
 		})
 		.y(d => {
 			return y(d.close);
+		});
+	let lineMountainBase = d3
+		.line()
+		.x(d => {
+			return x(new Date(Date.parse(d.date)));
 		})
+		.y(d => {
+			return y(d.close * leftEdgeDatum[0].close / leftEdgeBaseDatum[0].close);
+		});
 
 	let lineMountainArea = d3
 		.area()
@@ -216,7 +224,7 @@ let drawMainChart = props => {
 			yValueP = py.invert(yPosition).toFixed(2);		
 			yAxistipP.style("opacity", 1).style("z-index", 8);
 			yAxistipP
-				.html(d3.format(".2%")((yValueP - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close))
+				.html(d3.format("+.2%")((yValueP - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close))
 				.style("left", width + margin.left + 4 + "px")
 				.style("top", d3.event.clientY - chartTopOffset - 9.5 + "px");
 		} else {
@@ -256,7 +264,9 @@ let drawMainChart = props => {
 	});
 	let pyMin = y.invert(height * 2 / 3),
 		pyMax = y.invert(0);
-
+	let leftEdgeBaseDatum = mcbasedata.filter(d => {
+		return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
+	});
 	py = d3
 		.scaleLinear()
 		.domain([pyMin, pyMax])
@@ -284,7 +294,7 @@ let drawMainChart = props => {
 		.scale(py)
 		.ticks(5)
 		.tickFormat((d) => {
-			return d3.format(".2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
+			return d3.format("+.2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
 		});
 
 	xGrid = d3
@@ -339,6 +349,7 @@ let drawMainChart = props => {
 	d3.selectAll(".line-ema").remove();
 	d3.selectAll(".line-mountain").remove();
 	d3.selectAll(".line-mountain-area").remove();
+	d3.selectAll(".line-mountain-base").remove();
 
 
 	//Info-bar div
@@ -589,7 +600,17 @@ let drawMainChart = props => {
 			//hideTooltip();
 			hideXAxisTip();
 		});
-
+	//Mountain Comparison Base
+	chartdata
+		.append("path")
+		.attr("class", "line-mountain-base")
+		.datum(mcbasedata)
+		.attr("d", lineMountainBase)
+		.attr("fill", 'none')
+		.attr("stroke", "rgba(205,255,255,0.6)")
+		.attr("stroke-linejoin", "round")
+		.attr("stroke-linecap", "round")
+		.attr("stroke-width", 1);
 	//Mountain Line
 	chartdata
 		.append("path")
@@ -608,6 +629,8 @@ let drawMainChart = props => {
 		.attr("d", lineMountainArea)
 		.attr("stroke", "none")
 		.attr("fill", "url(#svgGradient)");
+
+	
 
 	//Volumn Bars
 	bars
@@ -643,9 +666,6 @@ let drawMainChart = props => {
 		.on("mousedown", d => {
 			pickedDatum(d);
 		});
-	
-	
-	
 		
 	//SMA
 	chartdata
@@ -753,6 +773,9 @@ let drawMainChart = props => {
 		leftEdgeDatum = data.filter(d => {
 			return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
 		});
+		leftEdgeBaseDatum = mcbasedata.filter(d => {
+			return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
+		});
 		pyMin = new_y.invert(height * 2 / 3);
 		pyMax = new_y.invert(0);
 		new_py.domain([pyMin, pyMax]);
@@ -779,7 +802,7 @@ let drawMainChart = props => {
 				.scale(new_py)
 				.ticks(5)
 				.tickFormat((d) => {
-					return d3.format(".2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
+					return d3.format("+.2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
 				})
 		);
 		d3
@@ -836,8 +859,14 @@ let drawMainChart = props => {
 			.y1(d => {
 				return new_y(d.close);
 			});
-			
-
+		let new_lineMountainBase = d3
+			.line()
+			.x(d => {
+				return new_x(new Date(Date.parse(d.date)));
+			})
+			.y(d => {
+				return new_y(d.close * leftEdgeDatum[0].close / leftEdgeBaseDatum[0].close);
+			});	
 		d3
 			.selectAll(".bar-background")
 			.data(data)
@@ -905,6 +934,10 @@ let drawMainChart = props => {
 			.selectAll(".line-mountain-area")
 			.datum(data)
 			.attr("d", new_lineMountainArea);
+		d3
+			.selectAll(".line-mountain-base")
+			.datum(mcbasedata)
+			.attr("d", new_lineMountainBase);
 	}
 
 	

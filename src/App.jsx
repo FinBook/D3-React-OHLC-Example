@@ -5,7 +5,7 @@ import D3chart from "./D3chart";
 import "./App.css";
 import mockdata from "./d3Related/MockData.json";
 import mockdata1 from "./d3Related/MockData1.json";
-//import mockdata2 from "./d3Related/MockData2.json";
+import mockdata2 from "./d3Related/MockData2.json";
 
 class App extends Component {
 	constructor(props) {
@@ -182,7 +182,7 @@ class App extends Component {
 					
 				</div>
 				<div className="d3chart-container">
-					<D3chart data={data} pickedDatum={this.pickedDatum} zoomState={zoom} settings={settings} />
+					<D3chart data={data} pickedDatum={this.pickedDatum} zoomState={zoom} settings={settings} mcbasedata={mockdata2}/>
 				</div>
 				<div style={{position: "absolute", top: "560px", left: "20px", color:"white"}}>
 					<span>Current Datum: </span>
