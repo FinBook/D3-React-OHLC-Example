@@ -109,7 +109,7 @@ body {
 	height: 14px;
 }
 
-.y-axis-tip-v {
+.y-axis-tip-v, .y-axis-tip-v-percentage {
 	position: absolute;
 	background: rgba(50, 50, 50, 0.95);
 	border: 1px solid rgba(60, 60, 60, 1);
@@ -117,7 +117,7 @@ body {
 	text-align: center;
 	font-size: 10px;
 	color: white;
-	width: 32px;
+	width: 40px;
 	height: 14px;
 }
 

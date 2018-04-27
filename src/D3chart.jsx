@@ -29,25 +29,27 @@ let new_x, new_y;
 
 let drawMainChart = props => {
 	const {data, pickedDatum, zoomState, settings} = props;
-	let x, y, vy;
-	let xAxis, yAxis, yAxisV, xGrid, yGrid;
+	let x, y, vy, py;
+	let xAxis, yAxis, yAxisV, yAxisP, xGrid, yGrid;
 	let data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
 	let data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
 	//console.log(new Date().getTimezoneOffset())
 
 	//Zoom steps
-	let zoomStep, zoomFormat, zoomFormatTips;
+	let zoomStep, zoomFormat, zoomFormatTips, pickFormat;
 
 	switch (zoomState) {
 		case 0:
 			zoomStep = 8.64e7;
-			zoomFormat = "%b %d";
+			zoomFormat = (d) => {return d.getMonth() ? d3.timeFormat("%b %d")(d) : d3.timeFormat("%Y")(d)};
 			zoomFormatTips = "%Y %b %d";
+			pickFormat = "%b %d";
 			break;
 		case 1:
 			zoomStep = 3.6e6;
-			zoomFormat = "%H:%M";
+			zoomFormat = (d) => {return d.getHours() ? d3.timeFormat("%H:%M")(d) : d3.timeFormat("%b %d")(d)};
 			zoomFormatTips = "%b %d %H:%M";
+			pickFormat = "%H:%M"
 			break;
 		default:
 			zoomStep = 3e6;
@@ -71,6 +73,34 @@ let drawMainChart = props => {
 	let isUpday = d => {
 		return d.close > d.open;
 	};
+
+	//Scales
+	x = d3
+		.scaleTime()
+		.domain([start, end])
+		.range([0, width /*(rectWidth + 20) * (data.length + 1)*/]);
+
+	//showing range
+	let showedData = data.filter((d, i) => {
+		return i > data.length - 32;
+	});
+	let yMin = d3.min(
+			showedData.map(d => {
+				return d.low;
+			})
+		),
+		yMax = d3.max(
+			showedData.map(d => {
+				return d.high;
+			})
+		),
+		yRange = yMax - yMin;
+
+	let v_yMax = d3.max(
+		showedData.map(d => {
+			return d.volumn;
+		})
+	);
 
 	//Line Calculaiton
 	let lineSMA = d3
@@ -142,28 +172,7 @@ let drawMainChart = props => {
 				d.volumn.toFixed(0)
 		);
 	};
-	/*
-	let showTooltip = d => {
-		tooltip
-			.transition()
-			.duration(100)
-			.style("opacity", 1)
-			.style("z-index", 9);
-		tooltip
-			.html(
-				"O: " +
-					d.open.toFixed(2) +
-					"<br/>H: " +
-					d.high.toFixed(2) +
-					"<br/>L: " +
-					d.low.toFixed(2) +
-					"<br/>C: " +
-					d.close.toFixed(2)
-			)
-			.style("left", d3.event.pageX - 15 - chartLeftOffset + "px")
-			.style("top", d3.event.pageY - 70 - chartTopOffset + "px");
-	};
-	*/
+
 	let showXAxisTip = d => {
 		let xValue;
 		let format = d3.timeFormat(zoomFormatTips);
@@ -187,22 +196,34 @@ let drawMainChart = props => {
 
 	let showYAxisTipV = () => {
 		let yValueV;
-		yValueV = vy.invert(d3.event.clientY - chartTopOffset - margin.top).toFixed(0);
-		yAxistipV.style("opacity", 1).style("z-index", 8);
-		yAxistipV
-			.html(yValueV)
-			.style("left", width + margin.left + 4 + "px")
-			.style("top", d3.event.clientY - chartTopOffset - 9.5 + "px");
+		let yPosition = d3.event.clientY - chartTopOffset - margin.top
+		if(yPosition >= height * 2 / 3){
+			yValueV = vy.invert(yPosition).toFixed(0);		
+			yAxistipV.style("opacity", 1).style("z-index", 8);
+			yAxistipV
+				.html(yValueV)
+				.style("left", width + margin.left + 4 + "px")
+				.style("top", d3.event.clientY - chartTopOffset - 9.5 + "px");
+		} else {
+			yAxistipV.style("opacity", 0).style("z-index", -1);
+		}
 	};
-	/*
-	let hideTooltip = () => {
-		tooltip
-			.transition()
-			.duration(100)
-			.style("opacity", 0)
-			.style("z-index", -1);
+
+	let showYAxisTipP = () => {
+		let yValueP;
+		let yPosition = d3.event.clientY - chartTopOffset - margin.top
+		if(yPosition < height * 2 / 3){
+			yValueP = py.invert(yPosition).toFixed(2);		
+			yAxistipP.style("opacity", 1).style("z-index", 8);
+			yAxistipP
+				.html(d3.format(".2%")((yValueP - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close))
+				.style("left", width + margin.left + 4 + "px")
+				.style("top", d3.event.clientY - chartTopOffset - 9.5 + "px");
+		} else {
+			yAxistipP.style("opacity", 0).style("z-index", -1);
+		}
 	};
-	*/
+ 
 	let hideXAxisTip = () => {
 		xAxistip.style("opacity", 0).style("z-index", -1);
 	};
@@ -214,50 +235,40 @@ let drawMainChart = props => {
 	let hideYAxisTipV = () => {
 		yAxistipV.style("opacity", 0).style("z-index", -1);
 	};
-	//Scales
-	x = d3
-		.scaleTime()
-		.domain([start, end])
-		.range([0, width /*(rectWidth + 20) * (data.length + 1)*/]);
 
-	//showing range
-	let showedData = data.filter((d, i) => {
-		return i > data.length - 32;
-	});
-	let yMin = d3.min(
-			showedData.map(d => {
-				return d.low;
-			})
-		),
-		yMax = d3.max(
-			showedData.map(d => {
-				return d.high;
-			})
-		),
-		yRange = yMax - yMin;
-
-	let v_yMax = d3.max(
-		showedData.map(d => {
-			return d.volumn;
-		})
-	);
+	let hideYAxisTipP = () => {
+		yAxistipP.style("opacity", 0).style("z-index", -1);
+	};
 
 	y = d3
 		.scaleLinear()
-		.domain([yMin - 0.7 * yRange > 0 ? yMin - 0.7 * yRange : 0, yMax + 0.2 * yRange])
+		.domain([yMin - yRange > 0 ? yMin - yRange : 0, yMax + 0.2 * yRange])
 		.range([height, 0]);
 
 	vy = d3
 		.scaleLinear()
-		.domain([0, 3 * v_yMax])
-		.range([height, 0]);
+		.domain([0, v_yMax])
+		.range([height, height * 2 / 3 ]);
+	//get left edge datum
+	let leftEdgeDate = d3.timeFormat(pickFormat)(x.invert(0));
+	let leftEdgeDatum = data.filter(d => {
+		return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
+	});
+	let pyMin = y.invert(height * 2 / 3),
+		pyMax = y.invert(0);
+
+	py = d3
+		.scaleLinear()
+		.domain([pyMin, pyMax])
+		.range([height * 2 / 3, 0]);
 
 	new_x = x;
+	new_y = y;
 	xAxis = d3
 		.axisBottom()
 		.scale(x)
 		.ticks(8)
-		.tickFormat(d3.timeFormat(zoomFormat));
+		.tickFormat(zoomFormat);
 	yAxis = d3
 		.axisLeft()
 		.scale(y)
@@ -266,7 +277,15 @@ let drawMainChart = props => {
 	yAxisV = d3
 		.axisRight()
 		.scale(vy)
-		.ticks(10);
+		.ticks(5);
+
+	yAxisP = d3
+		.axisRight()
+		.scale(py)
+		.ticks(5)
+		.tickFormat((d) => {
+			return d3.format(".2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
+		});
 
 	xGrid = d3
 		.axisBottom()
@@ -312,6 +331,7 @@ let drawMainChart = props => {
 	d3.selectAll(".x-axis-tip").remove();
 	d3.selectAll(".y-axis-tip").remove();
 	d3.selectAll(".y-axis-tip-v").remove();
+	d3.selectAll(".y-axis-tip-v-percentage").remove();
 	d3.selectAll(".track-line").remove();
 	d3.selectAll(".info-bar").remove();
 	d3.selectAll(".info-column").remove();
@@ -353,6 +373,11 @@ let drawMainChart = props => {
 		.append("div")
 		.attr("class", "y-axis-tip-v")
 		.style("opacity", 0);
+	let yAxistipP = d3
+		.select("#trade-chart")
+		.append("div")
+		.attr("class", "y-axis-tip-v-percentage")
+		.style("opacity", 0);
 	//Mouse track grid line
 	let yLine = d3
 		.select("#trade-chart")
@@ -375,11 +400,13 @@ let drawMainChart = props => {
 				.style("top", d3.event.clientY - chartTopOffset - 0.5 + "px");
 			showYAxisTip();
 			showYAxisTipV();
+			showYAxisTipP();
 		})
 		.on("mouseout", d => {
 			yLine.style("opacity", 0).style("z-index", -1);
 			hideYAxisTip();
 			hideYAxisTipV();
+			hideYAxisTipP();
 		});
 
 	//Chart Grid
@@ -410,6 +437,14 @@ let drawMainChart = props => {
 		.attr("class", "y-axis-v")
 		.attr("transform", "translate(" + width + ", 0)")
 		.call(yAxisV)
+		.selectAll("text")
+		.style("text-anchor", "start");
+	
+	chart
+		.append("g")
+		.attr("class", "y-axis-p")
+		.attr("transform", "translate(" + width + ", 0)")
+		.call(yAxisP)
 		.selectAll("text")
 		.style("text-anchor", "start");
 	//Chart Data
@@ -693,7 +728,8 @@ let drawMainChart = props => {
 			);
 		});
 		
-		let new_vy = vy;
+		let new_vy = vy,
+			new_py = py;
 		let new_yMin = d3.min(
 				newRangedData.map(d => {
 					return d.low;
@@ -710,9 +746,16 @@ let drawMainChart = props => {
 				return d.volumn;
 			})
 		);
-		new_y = y;
-		new_y.domain([new_yMin - 0.7 * new_yRange > 0 ? new_yMin - 0.7 * new_yRange : 0, new_yMax + 0.2 * new_yRange]);
-		new_vy.domain([0, 3 * new_v_yMax]);
+	
+		new_y.domain([new_yMin - new_yRange > 0 ? new_yMin - new_yRange : 0, new_yMax + 0.2 * new_yRange]);
+		new_vy.domain([0, new_v_yMax]);
+		leftEdgeDate = d3.timeFormat(pickFormat)(new_x.invert(0));
+		leftEdgeDatum = data.filter(d => {
+			return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
+		});
+		pyMin = new_y.invert(height * 2 / 3);
+		pyMax = new_y.invert(0);
+		new_py.domain([pyMin, pyMax]);
 		gridY.call(yGrid.scale(new_y).ticks(10));
 		d3.selectAll(".y-axis").call(
 			d3
@@ -724,10 +767,23 @@ let drawMainChart = props => {
 			d3
 				.axisRight()
 				.scale(new_vy)
-				.ticks(10)
+				.ticks(5)
 		);
 		d3
 			.selectAll(".y-axis-v")
+			.selectAll("text")
+			.style("text-anchor", "start");
+		d3.selectAll(".y-axis-p").call(
+			d3
+				.axisRight()
+				.scale(new_py)
+				.ticks(5)
+				.tickFormat((d) => {
+					return d3.format(".2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
+				})
+		);
+		d3
+			.selectAll(".y-axis-p")
 			.selectAll("text")
 			.style("text-anchor", "start");
 		switch (zoomState) {

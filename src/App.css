@@ -43,7 +43,9 @@
 .y-axis path,
 .y-axis line,
 .y-axis-v path,
-.y-axis-v line {
+.y-axis-v line,
+.y-axis-p path,
+.y-axis-p line{
 	fill: none;
 	stroke: rgba(255, 255, 255, 0.4);
 	shape-rendering: crispEdges;

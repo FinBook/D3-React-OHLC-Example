@@ -167,6 +167,19 @@ class App extends Component {
 						checked={mainLineType === "mountain"}
 						onChange={() => this.handleMainLineType("mountain")} />
 					<span style={{color: "white", fontSize: 12}}>Mountain</span>
+					
+					<span style={{color: "white", fontSize: 12, marginLeft: 10}}>Comparison:</span>
+					<input
+						name="comparisonType"
+						type="checkbox"
+						 />
+					<span style={{color: "white", fontSize: 12}}>Percentage</span>
+					<input
+						name="comparisonType"
+						type="checkbox"
+						 />
+					<span style={{color: "white", fontSize: 12}}>Value</span>
+					
 				</div>
 				<div className="d3chart-container">
 					<D3chart data={data} pickedDatum={this.pickedDatum} zoomState={zoom} settings={settings} />
