@@ -19,8 +19,7 @@ const colorIncreaseFill = "rgba(94,137,50,1)",
 	colorEMA = "rgba(255,129,0,0.7)";
 
 const margin = {top: 40, right: 60, bottom: 30, left: 60};
-const width = 1060 - margin.left - margin.right,
-	height = 500 - margin.top - margin.bottom;
+let width, height;
 let rectWidth = 11,
 	backrectWidth;
 let xAxistipWidth = 40;
@@ -29,8 +28,10 @@ let new_x, new_y;
 let data_SMA, data_EMA;
 let chart_settings;
 
-let drawMainChart = props => {
+let drawMainChart = (props, windowWidth, windowHeight) => {
 	const {data, pickedDatum, zoomState, settings, mcbasedata} = props;
+	width = windowWidth - margin.left - margin.right;
+	height = windowHeight - 200 - margin.top - margin.bottom;
 	chart_settings = settings;
 	let x, y, vy, py;
 	let xAxis, yAxis, yAxisV, yAxisP, xGrid, yGrid;
@@ -398,7 +399,9 @@ let drawMainChart = props => {
 		.select("#trade-chart")
 		.append("div")
 		.attr("class", "track-line")
+		.style("width", width - 1 + "px")
 		.style("opacity", 0);
+		
 
 	//Chart
 	chart = d3
@@ -1039,20 +1042,44 @@ let updateLines = props => {
 		.attr("d", new_lineEMA);
 }
 
+
+
 export default class D3chart extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {		
+			windowWidth: window.innerWidth,
+			windowHeight: window.innerHeight			
+		};
+	}
+	updateDimensions () {
+		this.setState({
+			windowWidth: window.innerWidth,
+			windowHeight: window.innerHeight	
+		})
+	}
 	componentDidMount() {
-		drawMainChart(this.props);
+		drawMainChart(this.props, this.state.windowWidth, this.state.windowHeight);
+		window.addEventListener("resize", this.updateDimensions.bind(this));
 	}
 
-	shouldComponentUpdate(nextProps) {
-		
+	componentWillUnmount() {
+		window.removeEventListener("resize", this.updateDimensions.bind(this));
+	}
+
+	shouldComponentUpdate(nextProps, nextState) {
+		if (nextState.windowHeight !== this.state.windowHeight || nextState.windowWidth !== this.state.windowWidth) {
+			drawMainChart(this.props, nextState.windowWidth, nextState.windowHeight)
+			console.log("Redraw chart (New window size)");
+			return true;
+		}		
 		if (
 			nextProps.data &&
 			JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data)
 		) {
 			//redraw when data is changed
 			console.log("Redraw chart (New dataset)");
-			drawMainChart(nextProps);
+			drawMainChart(nextProps, this.state.windowWidth, this.state.windowHeight);
 			return false;
 		}
 		if(JSON.stringify(nextProps.settings) !== JSON.stringify(this.props.settings)) {

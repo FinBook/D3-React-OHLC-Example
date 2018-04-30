@@ -199,7 +199,7 @@ class App extends Component {
 				<div className="d3chart-container">
 					<D3chart data={data} pickedDatum={this.pickedDatum} zoomState={zoom} settings={settings} mcbasedata={mockdata2}/>
 				</div>
-				<div style={{position: "absolute", top: "560px", left: "20px", color:"white"}}>
+				<div style={{position: "absolute", top: "850px", left: "20px", color:"white"}}>
 					<span>Current Datum: </span>
 					<span>
 						{currentdata

@@ -32,8 +32,6 @@ body {
 }
 
 #chart {
-	height: 500px;
-	width: 1060px;
 	background-color: #000;
 	cursor: crosshair;
 }
@@ -125,7 +123,6 @@ body {
 	position: absolute;
 	border-top: 1px dashed rgba(80, 80, 80, 1);
 	height: 1px;
-	width: 939px;
 	pointer-events: none;
 }
 
