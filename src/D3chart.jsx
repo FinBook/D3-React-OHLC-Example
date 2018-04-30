@@ -26,13 +26,16 @@ let rectWidth = 11,
 let xAxistipWidth = 40;
 let chart, chartdata, bars;
 let new_x, new_y;
+let data_SMA, data_EMA;
+let chart_settings;
 
 let drawMainChart = props => {
 	const {data, pickedDatum, zoomState, settings, mcbasedata} = props;
+	chart_settings = settings;
 	let x, y, vy, py;
 	let xAxis, yAxis, yAxisV, yAxisP, xGrid, yGrid;
-	let data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
-	let data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
+	data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
+	data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
 	//console.log(new Date().getTimezoneOffset())
 
 	//Zoom steps
@@ -128,6 +131,7 @@ let drawMainChart = props => {
 		.y(d => {
 			return y(d.close);
 		});
+	/*
 	let lineMountainBase = d3
 		.line()
 		.x(d => {
@@ -136,7 +140,7 @@ let drawMainChart = props => {
 		.y(d => {
 			return y(d.close * leftEdgeDatum[0].close / leftEdgeBaseDatum[0].close);
 		});
-
+	*/
 	let lineMountainArea = d3
 		.area()
 		.x(d => {
@@ -207,7 +211,7 @@ let drawMainChart = props => {
 		let yPosition = d3.event.clientY - chartTopOffset - margin.top
 		if(yPosition >= height * 2 / 3){
 			yValueV = vy.invert(yPosition).toFixed(0);		
-			yAxistipV.style("opacity", 1).style("z-index", 8);
+			yAxistipV.style("opacity", chart_settings.showVolumn ? 1 : 0).style("z-index", 8);
 			yAxistipV
 				.html(yValueV)
 				.style("left", width + margin.left + 4 + "px")
@@ -948,7 +952,7 @@ let drawMainChart = props => {
 
 let updateMainChart = props => {
 	const {settings} = props;
-
+	chart_settings = settings;
 	if(settings.mainLineType === "mountain") {
 		d3
 			.selectAll(".line-mountain")
@@ -973,27 +977,42 @@ let updateMainChart = props => {
 	if(settings.showSMA) {
 		d3
 			.selectAll(".line-sma")
-			.style("opacity", 1)
+			.style("opacity", 1);
 	} else {
 		d3
 			.selectAll(".line-sma")
-			.style("opacity", 0)
+			.style("opacity", 0);
 	}
 	if(settings.showEMA) {
 		d3
 			.selectAll(".line-ema")
-			.style("opacity", 1)
+			.style("opacity", 1);
 	} else {
 		d3
 			.selectAll(".line-ema")
-			.style("opacity", 0)
+			.style("opacity", 0);
+	}
+	if(settings.showVolumn) {
+		d3
+			.selectAll(".bar-rect-v")
+			.style("opacity", 1);
+		d3
+			.selectAll(".y-axis-tip-v")
+			.style("opacity", 1);
+	} else {
+		d3
+			.selectAll(".bar-rect-v")
+			.style("opacity", 0);
+		d3
+			.selectAll(".y-axis-tip-v")
+			.style("opacity", 0);
 	}
 }
 
 let updateLines = props => {
 	const {data, settings} = props;
-	let data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
-	let data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
+	data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
+	data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
 	let new_lineSMA = d3
 			.line()
 			.x(d => {

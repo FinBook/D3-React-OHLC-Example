@@ -16,8 +16,9 @@ class App extends Component {
 			zoom: 0,
 			data: mockdata,
 			currentdata: null,
-			showSMA: true,
-			showEMA: true,
+			showSMA: false,
+			showEMA: false,
+			showVolumn: true,
 			mainLineType: "candlestick",
 			rangeSMA: 5,
 			sourceSMA: "close",
@@ -74,6 +75,13 @@ class App extends Component {
 		});
 	}
 
+	handleShowVolumn = () => {
+		let newShowVolumn = !this.state.showVolumn;
+		this.setState({
+			showVolumn: newShowVolumn
+		});
+	}
+
 	handleMainLineType = (type) => {
 		this.setState({
 			mainLineType: type
@@ -82,7 +90,7 @@ class App extends Component {
 
 
 	render() {
-		const {data, currentdata, zoom, showSMA, showEMA, mainLineType, rangeSMA, sourceSMA, rangeEMA, sourceEMA} = this.state;
+		const {data, currentdata, zoom, showSMA, showEMA, showVolumn, mainLineType, rangeSMA, sourceSMA, rangeEMA, sourceEMA} = this.state;
 		let date;
 		let format = d3.timeFormat("%Y %b %d %H:%M");
 		let linePara = {
@@ -94,6 +102,7 @@ class App extends Component {
 		let settings = {
 			"showSMA": showSMA,
 			"showEMA": showEMA,
+			"showVolumn": showVolumn,
 			"mainLineType": mainLineType,
 			"linePara": linePara			
 		}
@@ -109,6 +118,12 @@ class App extends Component {
 				<div style={{display: "flex", flexDirection: "row"}}>
 					<button className="change-button" onClick={this.handleClick1}>Data 1 (Daily)</button>
 					<button className="change-button" onClick={this.handleClick2}>Data 2 (Hourly)</button>
+					<input
+						name="showSMA"
+						type="checkbox"
+						checked={showVolumn}
+						onChange={this.handleShowVolumn} />
+					<span style={{color: "white", fontSize: 12}}>Volumn</span>
 					<input
 						name="showSMA"
 						type="checkbox"
@@ -167,7 +182,7 @@ class App extends Component {
 						checked={mainLineType === "mountain"}
 						onChange={() => this.handleMainLineType("mountain")} />
 					<span style={{color: "white", fontSize: 12}}>Mountain</span>
-					
+					{/*
 					<span style={{color: "white", fontSize: 12, marginLeft: 10}}>Comparison:</span>
 					<input
 						name="comparisonType"
@@ -179,7 +194,7 @@ class App extends Component {
 						type="checkbox"
 						 />
 					<span style={{color: "white", fontSize: 12}}>Value</span>
-					
+					*/}
 				</div>
 				<div className="d3chart-container">
 					<D3chart data={data} pickedDatum={this.pickedDatum} zoomState={zoom} settings={settings} mcbasedata={mockdata2}/>
