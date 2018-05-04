@@ -1,7 +1,53 @@
-import React from "react";
+import * as React from "react";
 import * as d3 from "d3";
-import * as lineCalculation from "./LineCal.js";
-import moment from "moment";
+import {ISMAOutData, IEMAOutData, ISMAOutDatum, IEMAOutDatum, calSMA, calEMA} from "./LineCal";
+let moment = require("moment");
+
+export type IData = Array<{
+	date: string;
+	open: number;
+	high: number;
+	low: number;
+	close: number;
+	volumn: number;
+}>;
+
+type IDatum = {
+	date: string;
+	open: number;
+	high: number;
+	low: number;
+	close: number;
+	volumn: number;
+};
+
+type ILine = {
+	x: number;
+	y: number;
+};
+
+interface IProps {
+	data: IData;
+	pickedDatum: (d: IDatum) => void;
+	zoomState: number;
+	settings: {
+		showSMA: boolean;
+		showEMA: boolean;
+		showVolumn: boolean;
+		mainLineType: string;
+		linePara: {
+			rangeSMA: number;
+			sourceSMA: string;
+			rangeEMA: number;
+			sourceEMA: string;
+		};
+	};
+}
+
+interface IState {
+	windowWidth: number;
+	windowHeight: number;
+}
 
 const Coinname = "Ethereum(ETH)";
 
@@ -19,62 +65,86 @@ const colorIncreaseFill = "rgba(94,137,50,1)",
 	colorEMA = "rgba(255,129,0,0.7)";
 
 const margin = {top: 40, right: 60, bottom: 30, left: 60};
-let width, height;
-let rectWidth = 11,
-	backrectWidth;
-let xAxistipWidth = 40;
-let chart, chartdata, bars;
-let new_x, new_y;
-let data_SMA, data_EMA;
-let chart_settings;
+let width: number, height: number;
 
-let drawMainChart = (props, windowWidth, windowHeight) => {
-	const {data, pickedDatum, zoomState, settings, mcbasedata} = props;
+let rectWidth = 11,
+	backrectWidth: number;
+let xAxistipWidth = 40;
+
+let chart: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
+let chartdata: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
+let bars: d3.Selection<d3.BaseType, {}, d3.BaseType, {}>;
+
+let new_x: d3.ScaleTime<number, number>, new_y: d3.ScaleLinear<number, number>;
+
+let data_SMA: ISMAOutData, data_EMA: IEMAOutData;
+
+let chart_settings: IProps["settings"];
+
+let drawMainChart = (props: IProps, windowWidth: number, windowHeight: number): void => {
+	const {data, pickedDatum, zoomState, settings} = props;
+
+	let x: d3.ScaleTime<number, number>;
+	let y: d3.ScaleLinear<number, number>;
+	let vy: d3.ScaleLinear<number, number>;
+	let py: d3.ScaleLinear<number, number>;
+
+	let xAxis: d3.Axis<number | Date | {valueOf(): number}>;
+	let yAxis: d3.Axis<number | Date | {valueOf(): number}>;
+	let yAxisV: d3.Axis<number | Date | {valueOf(): number}>;
+	let yAxisP: d3.Axis<number | Date | {valueOf(): number}>;
+	let xGrid: d3.Axis<number | Date | {valueOf(): number}>;
+	let yGrid: d3.Axis<number | Date | {valueOf(): number}>;
+
 	width = windowWidth - margin.left - margin.right;
-	height = windowHeight - 200 - margin.top - margin.bottom;
+	height = windowHeight - 400 - margin.top - margin.bottom;
 	chart_settings = settings;
-	let x, y, vy, py;
-	let xAxis, yAxis, yAxisV, yAxisP, xGrid, yGrid;
-	data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
-	data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
+
+	data_SMA = calSMA(data, settings.linePara.rangeSMA, settings.linePara.sourceSMA);
+	data_EMA = calEMA(data, settings.linePara.rangeEMA, settings.linePara.sourceEMA);
 	//console.log(new Date().getTimezoneOffset())
 
 	//Zoom steps
-	let zoomStep, zoomFormat, zoomFormatTips, pickFormat;
+	let zoomStep: number;
+	let zoomFormat: (date: Date) => string;
+	let zoomFormatTips: string;
+	let pickFormat: string;
 
 	switch (zoomState) {
 		case 0:
 			zoomStep = 8.64e7;
-			zoomFormat = (d) => {return d.getMonth() ? d3.timeFormat("%b %d")(d) : d3.timeFormat("%Y")(d)};
+			zoomFormat = date => {
+				return date.getMonth() ? d3.timeFormat("%b %d")(date) : d3.timeFormat("%Y")(date);
+			};
 			zoomFormatTips = "%Y %b %d";
 			pickFormat = "%b %d";
 			break;
 		case 1:
 			zoomStep = 3.6e6;
-			zoomFormat = (d) => {return d.getHours() ? d3.timeFormat("%H:%M")(d) : d3.timeFormat("%b %d")(d)};
+			zoomFormat = date => {
+				return date.getHours() ? d3.timeFormat("%H:%M")(date) : d3.timeFormat("%b %d")(date);
+			};
 			zoomFormatTips = "%b %d %H:%M";
-			pickFormat = "%b %d %H"
+			pickFormat = "%b %d %H";
 			break;
 		default:
 			zoomStep = 3e6;
-			zoomFormat = "%b %d";
+			zoomFormat = date => {
+				return "%b %d";
+			};
 			break;
 	}
 	let maxDate = d3.max(data, d => {
 		return d.date;
 	});
-	/*
-	let minDate = d3.min(data, d => {
-		return d.date;
-	});
-	*/
+
 	let extentStart = new Date(Date.parse(maxDate) - zoomStep * 100);
 	let extentEnd = new Date(Date.parse(maxDate) + zoomStep * 10);
 	let start = new Date(Date.parse(maxDate) - zoomStep * 30);
 	let end = new Date(Date.parse(maxDate) + zoomStep * 2);
-	let xExtent = d3.extent([extentStart, extentEnd]);
+	let xExtent: [Date, Date] = d3.extent([extentStart, extentEnd]);
 
-	let isUpday = d => {
+	let isUpday = (d: IDatum): boolean => {
 		return d.close > d.open;
 	};
 
@@ -82,7 +152,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 	x = d3
 		.scaleTime()
 		.domain([start, end])
-		.range([0, width /*(rectWidth + 20) * (data.length + 1)*/]);
+		.range([0, width]);
 
 	//showing range
 	let showedData = data.filter((d, i) => {
@@ -108,7 +178,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 
 	//Line Calculaiton
 	let lineSMA = d3
-		.line()
+		.line<ISMAOutDatum>()
 		.x(d => {
 			return x(new Date(Date.parse(d.date)));
 		})
@@ -116,7 +186,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 			return y(d.SMA);
 		});
 	let lineEMA = d3
-		.line()
+		.line<IEMAOutDatum>()
 		.x(d => {
 			return x(new Date(Date.parse(d.date)));
 		})
@@ -125,25 +195,16 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		});
 
 	let lineMountain = d3
-		.line()
+		.line<IDatum>()
 		.x(d => {
 			return x(new Date(Date.parse(d.date)));
 		})
 		.y(d => {
 			return y(d.close);
 		});
-	/*
-	let lineMountainBase = d3
-		.line()
-		.x(d => {
-			return x(new Date(Date.parse(d.date)));
-		})
-		.y(d => {
-			return y(d.close * leftEdgeDatum[0].close / leftEdgeBaseDatum[0].close);
-		});
-	*/
+
 	let lineMountainArea = d3
-		.area()
+		.area<IDatum>()
 		.x(d => {
 			return x(new Date(Date.parse(d.date)));
 		})
@@ -151,10 +212,9 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.y1(d => {
 			return y(d.close);
 		});
-		
 
 	let line = d3
-		.line()
+		.line<ILine>()
 		.x(d => {
 			return d.x;
 		})
@@ -162,7 +222,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 			return d.y;
 		});
 
-	let showColumndata = d => {
+	let showColumndata = (d: IDatum): void => {
 		infoBar.html(
 			Coinname +
 				" O: <div class = '" +
@@ -186,7 +246,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		);
 	};
 
-	let showXAxisTip = d => {
+	let showXAxisTip = (d: IDatum): void => {
 		let xValue;
 		let format = d3.timeFormat(zoomFormatTips);
 		xValue = format(new Date(Date.parse(d.date)));
@@ -209,9 +269,9 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 
 	let showYAxisTipV = () => {
 		let yValueV;
-		let yPosition = d3.event.clientY - chartTopOffset - margin.top
-		if(yPosition >= height * 2 / 3){
-			yValueV = vy.invert(yPosition).toFixed(0);		
+		let yPosition = d3.event.clientY - chartTopOffset - margin.top;
+		if (yPosition >= height * 2 / 3) {
+			yValueV = vy.invert(yPosition).toFixed(0);
 			yAxistipV.style("opacity", chart_settings.showVolumn ? 1 : 0).style("z-index", 8);
 			yAxistipV
 				.html(yValueV)
@@ -224,19 +284,19 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 
 	let showYAxisTipP = () => {
 		let yValueP;
-		let yPosition = d3.event.clientY - chartTopOffset - margin.top
-		if(yPosition < height * 2 / 3){
-			yValueP = py.invert(yPosition).toFixed(2);		
+		let yPosition = d3.event.clientY - chartTopOffset - margin.top;
+		if (yPosition < height * 2 / 3) {
+			yValueP = py.invert(yPosition).toFixed(2);
 			yAxistipP.style("opacity", 1).style("z-index", 8);
 			yAxistipP
-				.html(d3.format("+.2%")((yValueP - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close))
+				.html(d3.format("+.2%")((yValueP - leftEdgeDatum[0].close) / leftEdgeDatum[0].close))
 				.style("left", width + margin.left + 4 + "px")
 				.style("top", d3.event.clientY - chartTopOffset - 9.5 + "px");
 		} else {
 			yAxistipP.style("opacity", 0).style("z-index", -1);
 		}
 	};
- 
+
 	let hideXAxisTip = () => {
 		xAxistip.style("opacity", 0).style("z-index", -1);
 	};
@@ -261,7 +321,8 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 	vy = d3
 		.scaleLinear()
 		.domain([0, v_yMax])
-		.range([height, height * 2 / 3 ]);
+		.range([height, height * 2 / 3]);
+
 	//get left edge datum
 	let leftEdgeDate = d3.timeFormat(pickFormat)(x.invert(0));
 	let leftEdgeDatum = data.filter(d => {
@@ -269,9 +330,6 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 	});
 	let pyMin = y.invert(height * 2 / 3),
 		pyMax = y.invert(0);
-	let leftEdgeBaseDatum = mcbasedata.filter(d => {
-		return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
-	});
 	py = d3
 		.scaleLinear()
 		.domain([pyMin, pyMax])
@@ -280,46 +338,39 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 	new_x = x;
 	new_y = y;
 	xAxis = d3
-		.axisBottom()
-		.scale(x)
+		.axisBottom(x)
 		.ticks(8)
 		.tickFormat(zoomFormat);
-	yAxis = d3
-		.axisLeft()
-		.scale(y)
-		.ticks(10);
+	yAxis = d3.axisLeft(y).ticks(10);
 
-	yAxisV = d3
-		.axisRight()
-		.scale(vy)
-		.ticks(5);
+	yAxisV = d3.axisRight(vy).ticks(5);
 
 	yAxisP = d3
-		.axisRight()
-		.scale(py)
+		.axisRight(py)
 		.ticks(5)
-		.tickFormat((d) => {
-			return d3.format("+.2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
+		.tickFormat((d: number) => {
+			return d3.format("+.2%")((d - leftEdgeDatum[0].close) / leftEdgeDatum[0].close);
 		});
 
 	xGrid = d3
-		.axisBottom()
-		.scale(x)
+		.axisBottom(x)
 		.ticks(8)
 		.tickSize(-height)
-		.tickFormat("");
+		.tickFormat(() => "");
 
 	yGrid = d3
-		.axisLeft()
-		.scale(y)
+		.axisLeft(y)
 		.ticks(10)
 		.tickSize(-width)
-		.tickFormat("");
+		.tickFormat(() => "");
 	//Zoom
 	let zoom = d3
 		.zoom()
 		.scaleExtent([0.5, 5])
-		.translateExtent([[x(new Date(xExtent[0])), -Infinity], [x(new Date(xExtent[1])), Infinity]])
+		.translateExtent([
+			[x(new Date(xExtent[0].toString())), -Infinity],
+			[x(new Date(xExtent[1].toString())), Infinity]
+		])
 		.on("zoom", zoomed);
 
 	switch (zoomState) {
@@ -356,22 +407,12 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 	d3.selectAll(".line-mountain-area").remove();
 	d3.selectAll(".line-mountain-base").remove();
 
-
 	//Info-bar div
 	let infoBar = d3
 		.select("#trade-chart")
 		.append("div")
 		.attr("class", "info-bar")
 		.html(Coinname + " No datum picked");
-
-	/*
-	//Tooltip div
-	let tooltip = d3
-		.select("#trade-chart")
-		.append("div")
-		.attr("class", "tooltip")
-		.style("opacity", 0);
-	*/
 
 	//Axis tip div
 	let xAxistip = d3
@@ -401,7 +442,6 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.attr("class", "track-line")
 		.style("width", width - 1 + "px")
 		.style("opacity", 0);
-		
 
 	//Chart
 	chart = d3
@@ -437,6 +477,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.append("g")
 		.attr("class", "grid")
 		.call(yGrid);
+
 	//Chart Axis
 	let gX = chart
 		.append("g")
@@ -457,7 +498,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.call(yAxisV)
 		.selectAll("text")
 		.style("text-anchor", "start");
-	
+
 	chart
 		.append("g")
 		.attr("class", "y-axis-p")
@@ -485,24 +526,27 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.enter()
 		.append("g")
 		.attr("class", "single-bar");
+
 	//Gradient fill
 	let defs = chartdata.append("defs");
-	let gradient = defs.append("linearGradient")
+	let gradient = defs
+		.append("linearGradient")
 		.attr("id", "svgGradient")
 		.attr("spreadMethod", "pad")
 		.attr("x1", "0%")
 		.attr("x2", "0%")
 		.attr("y1", "0%")
 		.attr("y2", "100%");
-	gradient.append("stop")
+	gradient
+		.append("stop")
 		.attr("offset", "0%")
 		.attr("style", "stop-color:rgba(0, 178, 255, 0.7); stop-opacity:0.7;");
-	gradient.append("stop")
+	gradient
+		.append("stop")
 		.attr("offset", "75%")
 		.attr("style", "stop-color:rgba(255, 255, 255, 0); stop-opacity:0;");
 
 	bars = chartdata.selectAll("g");
-
 	bars
 		.data(data)
 		.exit()
@@ -511,122 +555,104 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 	bars
 		.append("rect")
 		.attr("class", "bar-background")
-		.attr("x", d => {
+		.attr("x", (d: IDatum) => {
 			return x(new Date(Date.parse(d.date))) - backrectWidth / 2;
 		})
 		.attr("y", 0)
 		.attr("width", backrectWidth)
 		.attr("height", height)
-		.on("mousemove", d => {
+		.on("mousemove", (d: IDatum) => {
 			showColumndata(d);
 		})
-		.on("mouseover", d => {
+		.on("mouseover", (d: IDatum) => {
 			showXAxisTip(d);
 		})
-		.on("mouseout", d => {
+		.on("mouseout", () => {
 			hideXAxisTip();
 		});
 	//Rectengle Bars
 	bars
 		.append("rect")
 		.attr("class", "bar-rect bar-data")
-		.attr("x", d => {
+		.attr("x", (d: IDatum) => {
 			return x(new Date(Date.parse(d.date))) - rectWidth / 2;
 		})
-		.attr("y", d => {
+		.attr("y", (d: IDatum) => {
 			return isUpday(d) ? y(d.close) : y(d.open);
 		})
 		.attr("width", rectWidth)
-		.attr("height", d => {
+		.attr("height", (d: IDatum) => {
 			return isUpday(d) ? y(d.open) - y(d.close) : y(d.close) - y(d.open);
 		})
-		.style("fill", d => {
+		.style("fill", (d: IDatum) => {
 			return isUpday(d) ? colorIncreaseFill : colorDecreaseFill;
 		})
-		.style("stroke", d => {
+		.style("stroke", (d: IDatum) => {
 			return isUpday(d) ? colorIncreaseStroke : colorDecreaseStroke;
 		})
-		.on("mousemove", d => {
+		.on("mousemove", (d: IDatum) => {
 			showColumndata(d);
 		})
-		.on("mouseover", d => {
-			//showTooltip(d);
+		.on("mouseover", (d: IDatum) => {
 			showXAxisTip(d);
 		})
-		.on("mouseout", d => {
-			//hideTooltip();
+		.on("mouseout", () => {
 			hideXAxisTip();
 		})
-		.on("mousedown", d => {
+		.on("mousedown", (d: IDatum) => {
 			pickedDatum(d);
 		});
 	//High low lines
 	bars
 		.append("path")
 		.attr("class", "bar-line1  bar-data")
-		.attr("d", d => {
+		.attr("d", (d: IDatum) => {
 			return line([
 				{x: x(new Date(Date.parse(d.date))), y: y(d.high)},
 				{x: x(new Date(Date.parse(d.date))), y: isUpday(d) ? y(d.close) : y(d.open)}
 			]);
 		})
-		.style("stroke", d => {
+		.style("stroke", (d: IDatum) => {
 			return isUpday(d) ? colorIncreaseStroke : colorDecreaseStroke;
 		})
-		.on("mousemove", d => {
+		.on("mousemove", (d: IDatum) => {
 			showColumndata(d);
 		})
-		.on("mouseover", d => {
-			//showTooltip(d);
+		.on("mouseover", (d: IDatum) => {
 			showXAxisTip(d);
 		})
-		.on("mouseout", d => {
-			//hideTooltip();
+		.on("mouseout", () => {
 			hideXAxisTip();
 		});
 	bars
 		.append("path")
 		.attr("class", "bar-line2  bar-data")
-		.attr("d", d => {
+		.attr("d", (d: IDatum) => {
 			return line([
 				{x: x(new Date(Date.parse(d.date))), y: y(d.low)},
 				{x: x(new Date(Date.parse(d.date))), y: isUpday(d) ? y(d.open) : y(d.close)}
 			]);
 		})
-		.style("stroke", d => {
+		.style("stroke", (d: IDatum) => {
 			return isUpday(d) ? colorIncreaseStroke : colorDecreaseStroke;
 		})
-		.on("mousemove", d => {
+		.on("mousemove", (d: IDatum) => {
 			showColumndata(d);
 		})
-		.on("mouseover", d => {
-			//showTooltip(d);
+		.on("mouseover", (d: IDatum) => {
 			showXAxisTip(d);
 		})
-		.on("mouseout", d => {
-			//hideTooltip();
+		.on("mouseout", () => {
 			hideXAxisTip();
 		});
-	/*
-	//Mountain Comparison Base
-	chartdata
-		.append("path")
-		.attr("class", "line-mountain-base")
-		.datum(mcbasedata)
-		.attr("d", lineMountainBase)
-		.attr("fill", 'none')
-		.attr("stroke", "rgba(205,255,255,0.6)")
-		.attr("stroke-linejoin", "round")
-		.attr("stroke-linecap", "round")
-		.attr("stroke-width", 1);
-	*/
+
 	//Mountain Line
 	chartdata
 		.append("path")
 		.attr("class", "line-mountain")
 		.datum(data)
 		.attr("d", lineMountain)
-		.attr("fill", 'none')
+		.attr("fill", "none")
 		.attr("stroke", "white")
 		.attr("stroke-linejoin", "round")
 		.attr("stroke-linecap", "round")
@@ -639,43 +665,39 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.attr("stroke", "none")
 		.attr("fill", "url(#svgGradient)");
 
-	
-
 	//Volumn Bars
 	bars
 		.append("rect")
 		.attr("class", "bar-rect-v")
-		.attr("x", d => {
+		.attr("x", (d: IDatum) => {
 			return x(new Date(Date.parse(d.date))) - rectWidth / 2;
 		})
-		.attr("y", d => {
+		.attr("y", (d: IDatum) => {
 			return vy(d.volumn);
 		})
 		.attr("width", rectWidth)
-		.attr("height", d => {
+		.attr("height", (d: IDatum) => {
 			return height - vy(d.volumn);
 		})
-		.style("fill", d => {
+		.style("fill", (d: IDatum) => {
 			return isUpday(d) ? colorIncreaseFillV : colorDecreaseFillV;
 		})
-		.style("stroke", d => {
+		.style("stroke", (d: IDatum) => {
 			return isUpday(d) ? colorIncreaseStrokeV : colorDecreaseStrokeV;
 		})
-		.on("mousemove", d => {
+		.on("mousemove", (d: IDatum) => {
 			showColumndata(d);
 		})
-		.on("mouseover", d => {
-			//showTooltip(d);
+		.on("mouseover", (d: IDatum) => {
 			showXAxisTip(d);
 		})
-		.on("mouseout", d => {
-			//hideTooltip();
+		.on("mouseout", () => {
 			hideXAxisTip();
 		})
-		.on("mousedown", d => {
+		.on("mousedown", (d: IDatum) => {
 			pickedDatum(d);
 		});
-		
+
 	//SMA
 	chartdata
 		.append("path")
@@ -687,8 +709,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.attr("stroke-linejoin", "round")
 		.attr("stroke-linecap", "round")
 		.attr("stroke-width", 1);
-	
-	
+
 	//EMA
 	chartdata
 		.append("path")
@@ -700,39 +721,31 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		.attr("stroke-linejoin", "round")
 		.attr("stroke-linecap", "round")
 		.attr("stroke-width", 1);
-	
-	if(!settings.showSMA) {
-		d3
-			.selectAll(".line-sma")
-			.style("opacity", 0)
+
+	if (!settings.showVolumn) {
+		d3.selectAll(".bar-rect-v").style("opacity", 0);
 	}
-	if(!settings.showEMA) {
-		d3
-			.selectAll(".line-ema")
-			.style("opacity", 0)
+
+	if (!settings.showSMA) {
+		d3.selectAll(".line-sma").style("opacity", 0);
 	}
-	if(settings.mainLineType !== "mountain") {
-		d3
-			.selectAll(".line-mountain")
-			.style("opacity", 0)
-		d3
-			.selectAll(".line-mountain-area")
-			.style("opacity", 0)
+	if (!settings.showEMA) {
+		d3.selectAll(".line-ema").style("opacity", 0);
+	}
+	if (settings.mainLineType !== "mountain") {
+		d3.selectAll(".line-mountain").style("opacity", 0);
+		d3.selectAll(".line-mountain-area").style("opacity", 0);
 	} else {
-		d3
-			.selectAll(".bar-data")
-			.style("opacity", 0)
+		d3.selectAll(".bar-data").style("opacity", 0);
 	}
-	
-	
 
 	chart.call(zoom);
 
 	//Zoom function
 	function zoomed() {
 		let transformAxis = d3.event.transform;
-		let newExtentEnd;
-		let newRangedData;
+		let newExtentEnd: Date;
+		let newRangedData: IData;
 		new_x = transformAxis.rescaleX(x);
 
 		if (transformAxis.k > 3.5) {
@@ -745,7 +758,10 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 			newExtentEnd = new Date(Date.parse(maxDate) + zoomStep * 10);
 		}
 		xExtent = d3.extent([extentStart, newExtentEnd]);
-		zoom.translateExtent([[x(new Date(xExtent[0])), -Infinity], [x(new Date(xExtent[1])), Infinity]]);
+		zoom.translateExtent([
+			[x(new Date(xExtent[0].toString())), -Infinity],
+			[x(new Date(xExtent[1].toString())), Infinity]
+		]);
 
 		gX.call(xAxis.scale(new_x));
 		gX.selectAll("text").style("text-anchor", "middle");
@@ -756,18 +772,22 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 				moment(d.date).isBefore(new_x.invert(width + rectWidth))
 			);
 		});
-		
+
 		let new_vy = vy,
 			new_py = py;
-		let new_yMin = d3.min(
-				newRangedData.map(d => {
-					return d.low;
-				})
+		let new_yMin = Number(
+				d3.min(
+					newRangedData.map(d => {
+						return d.low;
+					})
+				)
 			),
-			new_yMax = d3.max(
-				newRangedData.map(d => {
-					return d.high;
-				})
+			new_yMax = Number(
+				d3.max(
+					newRangedData.map(d => {
+						return d.high;
+					})
+				)
 			),
 			new_yRange = new_yMax - new_yMin;
 		let new_v_yMax = d3.max(
@@ -775,31 +795,27 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 				return d.volumn;
 			})
 		);
-	
+
 		new_y.domain([new_yMin - new_yRange > 0 ? new_yMin - new_yRange : 0, new_yMax + 0.2 * new_yRange]);
 		new_vy.domain([0, new_v_yMax]);
 		leftEdgeDate = d3.timeFormat(pickFormat)(new_x.invert(0));
-		
+
 		leftEdgeDatum = data.filter(d => {
 			return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
-		});
-		leftEdgeBaseDatum = mcbasedata.filter(d => {
-			return d3.timeFormat(pickFormat)(new Date(Date.parse(d.date))) === leftEdgeDate;
-		});
+        });
+        
 		pyMin = new_y.invert(height * 2 / 3);
 		pyMax = new_y.invert(0);
 		new_py.domain([pyMin, pyMax]);
 		gridY.call(yGrid.scale(new_y).ticks(10));
 		d3.selectAll(".y-axis").call(
 			d3
-				.axisLeft()
-				.scale(new_y)
+				.axisLeft(new_y)
 				.ticks(10)
 		);
 		d3.selectAll(".y-axis-v").call(
 			d3
-				.axisRight()
-				.scale(new_vy)
+				.axisRight(new_vy)
 				.ticks(5)
 		);
 		d3
@@ -808,11 +824,10 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 			.style("text-anchor", "start");
 		d3.selectAll(".y-axis-p").call(
 			d3
-				.axisRight()
-				.scale(new_py)
+				.axisRight(new_py)
 				.ticks(5)
-				.tickFormat((d) => {
-					return d3.format("+.2%")((d - leftEdgeDatum[0].close)/ leftEdgeDatum[0].close);
+				.tickFormat((d:number) => {
+					return d3.format("+.2%")((d - leftEdgeDatum[0].close) / leftEdgeDatum[0].close);
 				})
 		);
 		d3
@@ -837,7 +852,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 		}
 
 		let new_lineSMA = d3
-			.line()
+			.line<ISMAOutDatum>()
 			.x(d => {
 				return new_x(new Date(Date.parse(d.date)));
 			})
@@ -845,7 +860,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 				return new_y(d.SMA);
 			});
 		let new_lineEMA = d3
-			.line()
+			.line<IEMAOutDatum>()
 			.x(d => {
 				return new_x(new Date(Date.parse(d.date)));
 			})
@@ -853,15 +868,15 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 				return new_y(d.EMA);
 			});
 		let new_lineMountain = d3
-			.line()
+			.line<IDatum>()
 			.x(d => {
 				return new_x(new Date(Date.parse(d.date)));
 			})
 			.y(d => {
 				return new_y(d.close);
-			})
+			});
 		let new_lineMountainArea = d3
-			.area()
+			.area<IDatum>()
 			.x(d => {
 				return new_x(new Date(Date.parse(d.date)));
 			})
@@ -869,14 +884,7 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 			.y1(d => {
 				return new_y(d.close);
 			});
-		let new_lineMountainBase = d3
-			.line()
-			.x(d => {
-				return new_x(new Date(Date.parse(d.date)));
-			})
-			.y(d => {
-				return new_y(d.close * leftEdgeDatum[0].close / leftEdgeBaseDatum[0].close);
-			});	
+	
 		d3
 			.selectAll(".bar-background")
 			.data(data)
@@ -944,94 +952,60 @@ let drawMainChart = (props, windowWidth, windowHeight) => {
 			.selectAll(".line-mountain-area")
 			.datum(data)
 			.attr("d", new_lineMountainArea);
-		d3
-			.selectAll(".line-mountain-base")
-			.datum(mcbasedata)
-			.attr("d", new_lineMountainBase);
 	}
-
-	
 };
 
 let updateMainChart = props => {
 	const {settings} = props;
 	chart_settings = settings;
-	if(settings.mainLineType === "mountain") {
-		d3
-			.selectAll(".line-mountain")
-			.style("opacity", 1);
-		d3
-			.selectAll(".line-mountain-area")
-			.style("opacity", 1);
-		d3
-			.selectAll(".bar-data")
-			.style("opacity", 0);
+	if (settings.mainLineType === "mountain") {
+		d3.selectAll(".line-mountain").style("opacity", 1);
+		d3.selectAll(".line-mountain-area").style("opacity", 1);
+		d3.selectAll(".bar-data").style("opacity", 0);
 	} else {
-		d3
-			.selectAll(".line-mountain")
-			.style("opacity", 0);
-		d3
-			.selectAll(".line-mountain-area")
-			.style("opacity", 0);
-		d3
-			.selectAll(".bar-data")
-			.style("opacity", 1);
+		d3.selectAll(".line-mountain").style("opacity", 0);
+		d3.selectAll(".line-mountain-area").style("opacity", 0);
+		d3.selectAll(".bar-data").style("opacity", 1);
 	}
-	if(settings.showSMA) {
-		d3
-			.selectAll(".line-sma")
-			.style("opacity", 1);
+	if (settings.showSMA) {
+		d3.selectAll(".line-sma").style("opacity", 1);
 	} else {
-		d3
-			.selectAll(".line-sma")
-			.style("opacity", 0);
+		d3.selectAll(".line-sma").style("opacity", 0);
 	}
-	if(settings.showEMA) {
-		d3
-			.selectAll(".line-ema")
-			.style("opacity", 1);
+	if (settings.showEMA) {
+		d3.selectAll(".line-ema").style("opacity", 1);
 	} else {
-		d3
-			.selectAll(".line-ema")
-			.style("opacity", 0);
+		d3.selectAll(".line-ema").style("opacity", 0);
 	}
-	if(settings.showVolumn) {
-		d3
-			.selectAll(".bar-rect-v")
-			.style("opacity", 1);
-		d3
-			.selectAll(".y-axis-tip-v")
-			.style("opacity", 1);
+	if (settings.showVolumn) {
+		d3.selectAll(".bar-rect-v").style("opacity", 1);
+		d3.selectAll(".y-axis-tip-v").style("opacity", 1);
 	} else {
-		d3
-			.selectAll(".bar-rect-v")
-			.style("opacity", 0);
-		d3
-			.selectAll(".y-axis-tip-v")
-			.style("opacity", 0);
+		d3.selectAll(".bar-rect-v").style("opacity", 0);
+		d3.selectAll(".y-axis-tip-v").style("opacity", 0);
 	}
-}
+};
 
 let updateLines = props => {
 	const {data, settings} = props;
-	data_SMA = lineCalculation.calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
-	data_EMA = lineCalculation.calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
+	data_SMA = calSMA(data, parseInt(settings.linePara.rangeSMA, 10), settings.linePara.sourceSMA);
+	data_EMA = calEMA(data, parseInt(settings.linePara.rangeEMA, 10), settings.linePara.sourceEMA);
 	let new_lineSMA = d3
-			.line()
-			.x(d => {
-				return new_x(new Date(Date.parse(d.date)));
-			})
-			.y(d => {
-				return new_y(d.SMA);
-			});
-		let new_lineEMA = d3
-			.line()
-			.x(d => {
-				return new_x(new Date(Date.parse(d.date)));
-			})
-			.y(d => {
-				return new_y(d.EMA);
-			});
+		.line<ISMAOutDatum>()
+		.x(d => {
+			return new_x(new Date(Date.parse(d.date)));
+		})
+		.y(d => {
+			return new_y(d.SMA);
+		});
+	let new_lineEMA = d3
+		.line<IEMAOutDatum>()
+		.x(d => {
+			return new_x(new Date(Date.parse(d.date)));
+		})
+		.y(d => {
+			return new_y(d.EMA);
+		});
 	d3
 		.selectAll(".line-sma")
 		.datum(data_SMA)
@@ -1040,23 +1014,21 @@ let updateLines = props => {
 		.selectAll(".line-ema")
 		.datum(data_EMA)
 		.attr("d", new_lineEMA);
-}
+};
 
-
-
-export default class D3chart extends React.Component {
+export class D3Chart extends React.Component<IProps, IState> {
 	constructor(props) {
 		super(props);
-		this.state = {		
+		this.state = {
 			windowWidth: window.innerWidth,
-			windowHeight: window.innerHeight			
+			windowHeight: window.innerHeight
 		};
 	}
-	updateDimensions () {
+	updateDimensions() {
 		this.setState({
 			windowWidth: window.innerWidth,
-			windowHeight: window.innerHeight	
-		})
+			windowHeight: window.innerHeight
+		});
 	}
 	componentDidMount() {
 		drawMainChart(this.props, this.state.windowWidth, this.state.windowHeight);
@@ -1067,22 +1039,19 @@ export default class D3chart extends React.Component {
 		window.removeEventListener("resize", this.updateDimensions.bind(this));
 	}
 
-	shouldComponentUpdate(nextProps, nextState) {
+	shouldComponentUpdate(nextProps: IProps, nextState: IState) {
 		if (nextState.windowHeight !== this.state.windowHeight || nextState.windowWidth !== this.state.windowWidth) {
-			drawMainChart(this.props, nextState.windowWidth, nextState.windowHeight)
+			drawMainChart(this.props, nextState.windowWidth, nextState.windowHeight);
 			console.log("Redraw chart (New window size)");
 			return true;
-		}		
-		if (
-			nextProps.data &&
-			JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data)
-		) {
+		}
+		if (nextProps.data && JSON.stringify(nextProps.data) !== JSON.stringify(this.props.data)) {
 			//redraw when data is changed
 			console.log("Redraw chart (New dataset)");
 			drawMainChart(nextProps, this.state.windowWidth, this.state.windowHeight);
 			return false;
 		}
-		if(JSON.stringify(nextProps.settings) !== JSON.stringify(this.props.settings)) {
+		if (JSON.stringify(nextProps.settings) !== JSON.stringify(this.props.settings)) {
 			//update when settings are changed
 			console.log("Update chart (New settings)");
 			updateMainChart(nextProps);

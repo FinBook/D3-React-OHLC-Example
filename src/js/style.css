@@ -1,3 +1,27 @@
+.change-button {
+	margin-left: 20px;
+}
+
+.x-axis text, .y-axis text, .y-axis-v text{
+	font: 10px sans-serif;
+	color: rgba(255, 255, 255, 0.4);
+	pointer-events: none;
+}
+
+.x-axis path,
+.x-axis line,
+.y-axis path,
+.y-axis line,
+.y-axis-v path,
+.y-axis-v line,
+.y-axis-p path,
+.y-axis-p line{
+	fill: none;
+	stroke: rgba(255, 255, 255, 0.4);
+	shape-rendering: crispEdges;
+	pointer-events: none;
+}
+
 body {
 	margin: 0;
 	padding: 0;
